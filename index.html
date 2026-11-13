@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Turn Path of Building snapshots into one shareable Path of Exile build with leveling stages, endgame variants and gear alternatives.">
+  <meta name="theme-color" content="#10161b">
+  <meta property="og:title" content="Exile Loadouts">
+  <meta property="og:description" content="Build progression guides for Path of Exile 1.">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/style.css">
+  <script type="module" src="./src/app.js"></script>
+  <title>Exile Loadouts</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="./" aria-label="Exile Loadouts home"><img src="./assets/icon.svg" alt="" width="30" height="30"> Exile Loadouts</a>
+      <nav aria-label="Main navigation">
+        <a href="#workspace">Workspace</a>
+        <a href="https://github.com/noongarD/exile-loadouts" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-content">
+        <p class="eyebrow">PATH OF EXILE 1 · BUILD WORKSPACE</p>
+        <h1 id="hero-title">Plan your build.<br>Stage by stage.</h1>
+        <p>Combine leveling, gear swaps and endgame variants into one Path of Building export.</p>
+        <div class="actions">
+          <button id="hero-import" class="primary">Import PoB <span aria-hidden="true">↓</span></button>
+          <button id="demo" class="secondary">Try Flicker Strike example</button>
+        </div>
+      </div>
+    </section>
+    <section id="workspace" class="workspace" aria-labelledby="project-heading">
+      <div class="workspace-head">
+        <div>
+          <h2 id="project-heading">Untitled build</h2>
+          <p id="project-caption" class="muted">Saved in this browser</p>
+        </div>
+        <div class="actions project-actions">
+          <button id="new-project" class="quiet">New project</button>
+          <label class="button secondary file">Open project<input id="project-file" type="file" accept=".json,application/json"></label>
+          <button id="save-project" class="secondary">Save project</button>
+          <button id="export" class="primary">Export build <span aria-hidden="true">↗</span></button>
+        </div>
+      </div>
+      <div class="workspace-grid">
+        <aside class="sidebar panel" aria-label="Build progression">
+          <div class="sidebar-title"><h3>Progression</h3><span id="stage-count" class="count">0</span></div>
+          <div id="stage-list"></div>
+          <button id="add-stage" class="secondary wide">+ Add stage</button>
+          <button id="import-stage" class="quiet wide">Import PoB snapshot</button>
+        </aside>
+        <section class="editor panel" aria-label="Build editor">
+          <div id="editor-tabs" class="tabs" aria-label="Editor views"></div>
+          <div id="editor-body" class="editor-body"></div>
+        </section>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <footer class="shell footer">
+    <span>Exile Loadouts is a community tool for Path of Exile 1.</span>
+    <a href="https://pathofbuilding.community/" target="_blank" rel="noopener noreferrer">Path of Building ↗</a>
+  </footer>
+  <dialog id="import-dialog" aria-labelledby="import-heading">
+    <div class="dialog-head"><h2 id="import-heading">Import PoB</h2><button class="icon" data-close="import-dialog" aria-label="Close">×</button></div>
+    <p>Paste a PoB build code or choose a PoB XML file. For a pobb.in link, open the page and copy its build code.</p>
+    <label class="field">Build code or XML<textarea id="import-code" rows="5" placeholder="eNrt…"></textarea></label>
+    <div class="actions">
+      <label class="button secondary file">Choose file<input id="pob-file" type="file" accept=".xml,.txt,text/xml,text/plain,application/xml"></label>
+      <button id="read-import" class="primary">Read build</button>
+    </div>
+    <p id="import-error" class="feedback" role="status"></p>
+    <div id="import-options" hidden>
+      <label class="field">Snapshot selection<select id="import-selection"></select></label>
+      <label id="include-notes" class="check"><input id="keep-notes" type="checkbox"> Append original PoB notes to the project overview</label>
+      <div class="actions">
+        <button id="append-snapshot" class="primary">Add to progression</button>
+        <button id="replace-snapshot" class="secondary">Use for current stage</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="export-dialog" aria-labelledby="export-heading">
+    <div class="dialog-head"><h2 id="export-heading">Export build</h2><button class="icon" data-close="export-dialog" aria-label="Close">×</button></div>
+    <p>Paste the generated code into Path of Building’s <strong>Import/Export Build</strong> tab. Select <strong>Loadouts</strong> there to switch stages.</p>
+    <label class="field">Path of Building code<textarea id="export-code" readonly rows="4"></textarea></label>
+    <div class="actions">
+      <button id="copy-code" class="primary">Copy code</button>
+      <button id="download-xml" class="secondary">Download XML</button>
+      <button id="download-guide" class="secondary">Download guide</button>
+    </div>
+    <p id="export-status" class="feedback" role="status"></p>
+    <p>To make a public link, paste the code into <a href="https://pobb.in/" target="_blank" rel="noopener noreferrer">pobb.in ↗</a> and choose Create.</p>
+  </dialog>
+</body>
+</html>
