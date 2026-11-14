@@ -1,5 +1,5 @@
 import { normalizeProject } from './project.js';
-import { normalizeTerms } from './generator.js';
+import { normalizeTerms, parseRequest } from './generator.js';
 
 export const LEAGUE = '3.30 · Covens of Umbra';
 const source = 'campaign';
@@ -47,12 +47,10 @@ export function findSkills(data, query) {
 }
 
 export function draftRequest(data, description, choice) {
-  const words = ` ${normalizeTerms(description)} `;
-  const mentioned = name => words.includes(` ${normalizeTerms(name)} `);
-  const skills = Object.values(data.gems).filter(gem => !gem.support && gem.name.length >= 3 && mentioned(gem.name));
-  const skill = skills.sort((a, b) => b.name.length - a.name.length)[0];
-  const inferred = data.classes.flatMap(row => row.ascendancies.map(asc => asc.name)).find(mentioned) ||
-    data.classes.find(row => mentioned(row.name))?.name || (mentioned('necro') ? 'Necromancer' : '');
+  const request = parseRequest(description, data.gems);
+  const skill = data.gems[request.skill?.key];
+  const classes = request.classes.filter(hit => !hit.negative);
+  const inferred = classes.find(hit => data.classes.some(row => row.ascendancies.some(asc => asc.name === hit.key)))?.key || classes[0]?.key;
   const recommended = skill?.tags.includes('Bow') ? 'Ranger' : skill?.tags.includes('Minion') ? 'Witch' :
     skill?.tags.includes('Spell') ? 'Witch' : skill?.tags.includes('Melee') ? 'Duelist' : '';
   return { query: skill?.name ?? '', choice: choice || inferred || recommended, description };

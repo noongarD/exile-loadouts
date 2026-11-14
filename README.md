@@ -6,11 +6,11 @@ Exile Loadouts is a **Path of Exile 1** build planner and PoB exporter for **Cov
 
 ## Generate a build
 
-1. Enter a request such as **“Cheap Flicker Strike without Mageblood”** or **“Witch minions for bossing”**, or choose a class or ascendancy.
-2. Choose **Generate build**. The matcher uses known skill names, classes and playstyles. Set the priority yourself or let the matcher infer it. A lower-investment starting point takes precedence over an inferred endgame priority. An explicit priority opens the corresponding loadout when it exists.
-3. Choose **Open on pobb.in** for the ready-to-share progression or **Copy PoB code** to import it directly into Path of Building. Choose **Edit this build** to customize the generated project.
+1. Enter a request in English or Polish, such as **“Cheap Flicker Strike without Mageblood”**, **“I want minions to fight bosses”** or **“Szybki Deadeye z łukiem”**. The optional filters let you choose a class, a playstyle or a priority.
+2. Choose **Generate build**. The rule-based matcher uses skill names, common abbreviations, playstyles and exclusions. It shows why a build matched, suggests close spellings, and offers a custom draft when the catalog has a gap. A lower-investment starting point takes precedence over an inferred endgame priority. An explicit priority opens the corresponding loadout when it exists.
+3. Expand **Start here** for the first loadout and its next steps. Choose **Open on pobb.in** to view the selected profile, **Copy PoB code** to import it into Path of Building or **Edit this build** to start customizing.
 
-**Browse builds** shows ten Softcore Trade templates, including Static Strike Guardian and Explosive Arrow Ballista Hierophant. Each build credits its source. Where a profile has a published export, **Open on pobb.in** opens that profile. The app uses rule-based matching.
+**Browse builds** shows 18 Softcore Trade templates with search and a difficulty filter. The 3.30 expansion includes Absolution Necromancer, Sunder to Earthshatter Berserker, Elemental Hit of the Spectrum Deadeye and Static Strike of Gathering Lightning Slayer. The catalog combines creator guides with popular skills from the early league sample of November 14, 2026. Each build credits its sources and states where its progression begins. [Covens ladder on poe.ninja](https://poe.ninja/poe1/builds/covens)
 
 ## Build from scratch
 
@@ -48,4 +48,4 @@ npx playwright install chromium
 npm test
 ```
 
-The site is static and uses standard browser XML, compression and storage APIs. It can be hosted at a subpath on GitHub Pages. The app source is MIT licensed. Path of Exile belongs to Grinding Gear Games. This project is independently maintained.
+The site is static and uses standard browser XML, compression and storage APIs. It can be hosted at a subpath on GitHub Pages. The app source is MIT licensed. The hero illustration was created with ImageGen for Exile Loadouts. Path of Exile belongs to Grinding Gear Games. This project is independently maintained.

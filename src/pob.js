@@ -173,7 +173,10 @@ function addElement(doc, parent, tag, attributes = {}, body) {
 
 function patchInput(doc, config, name, kind, value) {
   direct(config, 'Input').filter(input => attr(input, 'name') === name).forEach(input => input.remove());
-  if (value !== null) addElement(doc, config, 'Input', { name, [kind]: value });
+  if (value !== null) {
+    const input = addElement(doc, config, 'Input', { name, [kind]: value });
+    config.insertBefore(input, direct(config, 'Input')[0]);
+  }
 }
 
 function applyConfig(doc, config, changes) {

@@ -144,6 +144,7 @@ test('generates a PoB from a description or a class without a prior import', asy
   const code = await page.evaluate(() => navigator.clipboard.readText());
   expect(inflateSync(Buffer.from(code, 'base64url')).toString('utf8')).toContain('activeSpec="8"');
   await page.getByLabel('Describe your build').clear();
+  await page.locator('#builder-preferences > summary').click();
   await page.getByLabel('Class or ascendancy').selectOption('Deadeye');
   await generate.click();
   await expect(result.getByRole('heading', { name: 'Lightning Arrow Deadeye' })).toBeVisible();
@@ -161,6 +162,7 @@ test('includes a bossing loadout when prioritizing a budget start', async ({ pag
   await expect(result).toContainText('Poison Summon Raging Spirit Necromancer');
   await expect(result).toContainText('Opens at Atlas · Early endgame');
   await expect(result).toContainText('The bossing loadout is also included.');
+  await page.locator('#builder-preferences > summary').click();
   await page.getByLabel('Priority').selectOption('bossing');
   await page.getByRole('button', { name: 'Generate build', exact: true }).click();
   await expect(result).toContainText('Opens at Endgame · Poison SRS');
@@ -168,6 +170,7 @@ test('includes a bossing loadout when prioritizing a budget start', async ({ pag
 
 test('creates an exportable draft for a skill outside the catalog', async ({ page }) => {
   await page.goto('/');
+  await page.locator('#builder-preferences > summary').click();
   await page.getByLabel('Class or ascendancy').selectOption('Deadeye');
   await page.getByLabel('Describe your build').fill('Tornado Shot');
   await page.getByRole('button', { name: 'Generate build', exact: true }).click();
@@ -199,6 +202,40 @@ test('creates an exportable draft for a skill outside the catalog', async ({ pag
   expect(xml).toContain('activeSpec="3"');
   expect(xml).toContain('Custom path');
   expect(xml).toContain('Gem acquisition');
+});
+
+test('uses natural playstyle, exclusions, destination skills and close spellings', async ({ page }) => {
+  await page.goto('/');
+  const prompt = page.getByLabel('Describe your build');
+  const generate = page.getByRole('button', { name: 'Generate build', exact: true });
+  const result = page.locator('#build-results');
+  for (const [description, name] of [
+    ['Chcę tankowaty build i palić wszystko wokół', 'Righteous Fire Chieftain'],
+    ['I don’t want minions. I want a fast bow mapper', 'Lightning Arrow Deadeye'],
+    ['Level with Rain of Arrows then use eHoTS', 'Elemental Hit of the Spectrum Deadeye'],
+    ['Vaal Absolution Necro', 'Absolution Necromancer'],
+    ['Absolutoin Necro', 'Absolution Necromancer'],
+    ['Penance Brnad', 'Penance Brand Ignite Elementalist'],
+  ]) {
+    await prompt.fill(description);
+    await generate.click();
+    await expect(result.getByRole('heading', { name, exact: true })).toBeVisible();
+  }
+});
+
+test('offers a searchable library with an easy first build filter', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Browse builds' }).click();
+  const result = page.locator('#build-results');
+  await expect(result.getByRole('heading', { name: 'Build library' })).toBeVisible();
+  await expect(result.getByRole('status')).toHaveText('18 of 18 builds');
+  await result.getByLabel('Search builds').fill('static strike');
+  await expect(result.getByRole('status')).toHaveText('3 of 18 builds');
+  await result.getByLabel('Difficulty').selectOption('easy');
+  await expect(result.getByRole('heading', { name: 'Static Strike Guardian', exact: true })).toBeVisible();
+  await expect(result.getByRole('status')).toHaveText('1 of 18 builds');
+  await result.getByRole('button', { name: 'Generate this build' }).click();
+  await expect(result.getByRole('link', { name: 'Open on pobb.in' })).toBeVisible();
 });
 
 test('saves a 3.30 league note inside the exported PoB', async ({ page }) => {

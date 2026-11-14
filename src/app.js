@@ -1,6 +1,6 @@
 import { compilePoB, CONDITIONS, decodePoB, encodePoB, EQUIPMENT, equippedItems, gemGroups, itemName, originalNotes, readSnapshot, savedMainGroup, sourceOptions, treeDiff } from './pob.js';
 import { addSource, fileStem, formatGuide, MAX_STAGES, newProject, newStage, normalizeProject, PHASES, pruneSources, STORAGE } from './project.js';
-import { CLASSES, FOCUS_LABELS, recommend } from './generator.js';
+import { CLASSES, FOCUS_LABELS, normalizeTerms, recommend } from './generator.js';
 import { draftRequest, findSkills, firstAcquisition, makeDraft, passivePath } from './planner.js';
 
 const $ = id => document.getElementById(id);
@@ -68,6 +68,8 @@ function updateHeader() {
   $('project-heading').textContent = project.title.trim() || 'Untitled build';
   $('project-caption').textContent = [project.patch && `Path of Exile ${project.patch}`, storageAvailable ? 'Saved in this browser' : 'Browser storage unavailable. Save a project file.'].filter(Boolean).join(' · ');
   $('export').disabled = !project.stages.length;
+  $('workspace-help').hidden = !!project.stages.length;
+  document.querySelector('.workspace-grid').hidden = !project.stages.length;
 }
 
 function snapshot(stage) {
@@ -290,6 +292,19 @@ function passiveEditor(stage, snap) {
   return details;
 }
 
+function gemRoutes(stage, snap, data) {
+  const className = snap.build.getAttribute('className');
+  const names = [...new Set([...gemGroups(snap).flatMap((group, index) => group.gems
+    .filter(gem => stage.edits.gems[`${index}:${gem.index}`]?.enabled ?? gem.enabled).map(gem => gem.name)),
+    ...stage.edits.extraGroups.flatMap(group => group.gems), ...Object.values(stage.edits.links ?? {}).flat()])];
+  return names.map(name => {
+    const route = firstAcquisition(data, name, className);
+    if (!route) return `${name} · check the gem’s specific acquisition.`;
+    const [act, quest, npc, , method] = route;
+    return `${name} · Act ${act} · ${quest} · ${method === 'quest' ? 'Quest reward' : `Buy from ${npc || 'vendor'}`}`;
+  });
+}
+
 function stageResearch(stage, snap) {
   const output = element('div', {});
   const details = panel('3.30 gem rewards and tree changes', output);
@@ -298,18 +313,9 @@ function stageResearch(stage, snap) {
     output.textContent = 'Loading 3.30 data…';
     try {
       const data = await dataset('planner');
-      const className = snap.build.getAttribute('className');
-      const names = [...new Set([...gemGroups(snap).flatMap((group, index) => group.gems
-        .filter(gem => stage.edits.gems[`${index}:${gem.index}`]?.enabled ?? gem.enabled).map(gem => gem.name)),
-        ...stage.edits.extraGroups.flatMap(group => group.gems), ...Object.values(stage.edits.links ?? {}).flat()])];
       const changes = snap.treeVersion === '3_29' ? (snap.tree.getAttribute('nodes') || '').split(',')
         .map(id => data.treeChanges[id]).filter(Boolean) : [];
-      const lines = names.map(name => {
-        const route = firstAcquisition(data, name, className);
-        if (!route) return `${name} · check the gem’s specific acquisition.`;
-        const [act, quest, npc, , method] = route;
-        return `${name} · Act ${act} · ${quest} · ${method === 'quest' ? 'Quest reward' : `Buy from ${npc || 'vendor'}`}`;
-      });
+      const lines = gemRoutes(stage, snap, data);
       output.dataset.loaded = 'yes';
       output.replaceChildren(...(changes.length ? [muted(`3.30 changed ${[...new Set(changes.map(change => change.name))].join(', ')} in this tree. Review those nodes before migration.`)] : []),
         element('ul', {}, ...lines.map(line => element('li', {}, line))),
@@ -697,15 +703,18 @@ async function loadGeneratedProject(template, focus) {
   return normalizeProject(data);
 }
 
-async function showGeneratedBuild(template, focus, reason, requested = focus, budgetFocus = '') {
+async function showGeneratedBuild(template, focus, reason, requested = focus, budgetFocus = '', hints = [], alternatives = []) {
   const results = $('build-results');
   const request = ++buildRequest;
   results.hidden = false;
   results.replaceChildren(muted('Preparing your build…'));
   try {
-    const generated = await loadGeneratedProject(template, focus);
+    const [generated, data] = await Promise.all([loadGeneratedProject(template, focus), dataset('planner')]);
     if (request !== buildRequest) return;
     const initial = generated.stages.find(stage => stage.id === generated.defaultId);
+    const firstStage = generated.stages[0];
+    const firstSnapshot = readSnapshot(generated.sources[firstStage.source].xml, firstStage.selection);
+    const routes = gemRoutes(firstStage, firstSnapshot, data);
     const treeVersion = readSnapshot(generated.sources[initial.source].xml, initial.selection).treeVersion;
     const link = template.links[focus];
     const profileLabel = link ? 'Open on pobb.in ↗' : 'Original guide PoB ↗';
@@ -733,16 +742,30 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
     results.replaceChildren(element('article', { className: 'panel generated-card', 'aria-labelledby': 'result-title' },
       element('p', { className: 'eyebrow' }, `${reason} · ${template.className} / ${template.ascendancy}`),
       title, muted(template.summary),
+      ...(hints.length ? [element('p', { className: 'match-hints' }, `Matched on ${[...new Set(hints)].join(' · ')}`)] : []),
+      ...(template.firstTip && template.firstTip !== template.summary ? [element('p', { className: 'first-tip' }, template.firstTip)] : []),
       element('div', { className: 'result-meta' }, `${FOCUS_LABELS[focus]} · Opens at ${initial.title} · ${generated.stages.length} loadouts`),
       ...(budgetFocus && Object.hasOwn(template.profiles, budgetFocus) ? [muted(`Your budget preference opens the lower-investment stage. The ${FOCUS_LABELS[budgetFocus].toLowerCase()} loadout is also included.`)] : []),
       ...(requested !== focus ? [muted(`The catalog has no dedicated ${FOCUS_LABELS[requested].toLowerCase()} loadout for this build. It opens on ${FOCUS_LABELS[focus].toLowerCase()}.`)] : []),
       element('ol', { className: 'result-stages', 'aria-label': 'Build progression' }, ...generated.stages.map(stage =>
         element('li', { className: `phase-${stage.phase}` }, stage.title))),
+      element('details', { className: 'subpanel first-loadout' }, element('summary', {}, `Start here · ${firstStage.title}`),
+        firstStage.goal && muted(firstStage.goal), firstStage.priority && muted(firstStage.priority),
+        routes.length ? panel('Where to get the gems', element('ul', {}, ...routes.map(line => element('li', {}, line)))) : null,
+        button('Open the first loadout in the editor', () => {
+          if (!mayReplace()) return;
+          replaceProject(structuredClone(generated), 'stage');
+          selected = project.stages[0].id;
+          render();
+          $('workspace').scrollIntoView({ block: 'start' });
+        }, 'secondary')),
       actions((link || template.reference) && element('a', { className: 'button primary', href: link || template.reference, target: '_blank', rel: 'noopener noreferrer' }, profileLabel), openEditor, copy),
       feedback,
       element('p', { className: 'muted credit' }, 'Build reference by ',
         element('a', { href: template.guide, target: '_blank', rel: 'noopener noreferrer' }, template.author),
-        treeVersion ? ` · PoB tree ${treeVersion.replaceAll('_', '.')}` : '')));
+        treeVersion ? ` · PoB tree ${treeVersion.replaceAll('_', '.')}` : ''),
+      ...(alternatives.length ? [element('div', { className: 'related-builds' }, muted('Other matches'),
+        actions(...alternatives.map(other => button(other.title, () => showGeneratedBuild(other, other.defaultFocus, 'Other match'), 'secondary'))))] : [])));
     results.scrollIntoView({ block: 'nearest' });
     title.focus({ preventScroll: true });
   } catch (error) {
@@ -750,16 +773,44 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
   }
 }
 
-function showBuildChoices(templates, heading, message, draftAction) {
+const DIFFICULTY = { easy: 'Good first build', medium: 'Some setup', advanced: 'More setup' };
+
+function showBuildChoices(templates, heading, message, draftAction, browse = false) {
   buildRequest++;
   const results = $('build-results');
+  const cards = element('div', { className: 'catalog-grid' });
+  const search = element('input', { type: 'search', placeholder: 'e.g. minions, Deadeye or Sunder' });
+  const difficulty = element('select', {}, element('option', { value: '' }, 'Any difficulty'),
+    ...Object.entries(DIFFICULTY).map(([value, label]) => element('option', { value }, label)));
+  const count = element('p', { className: 'muted catalog-count', role: 'status' });
+  function drawCards() {
+    const words = normalizeTerms(search.value).split(' ').filter(Boolean);
+    const visible = templates.filter(template => {
+      const body = normalizeTerms([template.title, template.className, template.ascendancy, ...template.aliases, ...template.styles].join(' '));
+      return (!difficulty.value || template.beginner === difficulty.value) && words.every(word => body.includes(word));
+    });
+    count.textContent = `${visible.length} of ${templates.length} builds`;
+    cards.replaceChildren(...visible.map(template => element('article', { className: 'panel catalog-card' },
+      element('p', { className: 'eyebrow' }, [template.ascendancy, DIFFICULTY[template.beginner]].filter(Boolean).join(' · ')),
+      element('h3', {}, template.title), muted(template.summary),
+      button('Generate this build', () => showGeneratedBuild(template, template.defaultFocus, 'Selected build')))));
+    if (browse && !visible.length) cards.append(muted('Try a different skill, class or difficulty.'));
+  }
+  search.addEventListener('input', drawCards);
+  difficulty.addEventListener('change', drawCards);
+  drawCards();
+  const title = element('h2', { tabIndex: -1 }, heading);
   results.hidden = false;
-  results.replaceChildren(element('h2', {}, heading), ...(message ? [muted(message)] : []),
+  results.replaceChildren(title, ...(message ? [muted(message)] : []),
     ...(draftAction ? [button('Make a custom draft', draftAction)] : []),
-    element('div', { className: 'catalog-grid' }, ...templates.map(template => element('article', { className: 'panel catalog-card' },
-      element('p', { className: 'eyebrow' }, template.ascendancy), element('h3', {}, template.title),
-      muted(template.summary), button('Generate this build', () => showGeneratedBuild(template, template.defaultFocus, 'Selected build'))))));
+    ...(browse ? [element('div', { className: 'form-grid catalog-filters' },
+      element('label', { className: 'field' }, 'Search builds', search),
+      element('label', { className: 'field' }, 'Difficulty', difficulty)),
+      count] : []), cards,
+    ...(browse ? [element('p', { className: 'muted credit' }, 'Softcore Trade. Popular skill selections informed by the early Covens ladder on November 14, 2026. ',
+      element('a', { href: 'https://poe.ninja/poe1/builds/covens', target: '_blank', rel: 'noopener noreferrer' }, 'Covens ladder ↗'))] : []));
   results.scrollIntoView({ block: 'nearest' });
+  title.focus({ preventScroll: true });
 }
 
 for (const [className, ascendancies] of Object.entries(CLASSES)) {
@@ -775,17 +826,11 @@ $('build-request').onsubmit = async event => {
     const templates = await catalog();
     const description = $('build-prompt').value;
     const choice = $('build-class').value;
-    const result = recommend(templates, { description, choice, focus: $('build-focus').value });
-    const request = description && draftRequest(await dataset('planner'), description, choice);
-    const unmatchedSkill = request?.query && result.kind === 'match' &&
-      !result.template.aliases.some(alias => alias.toLowerCase() === request.query.toLowerCase());
-    if (unmatchedSkill) {
-      showBuildChoices([], 'No matching build', `No curated template combines ${request.query} with that request.`, () => openDraft({ description }));
-      return;
-    }
-    if (result.kind === 'match') await showGeneratedBuild(result.template, result.profile, result.reason, result.preference, result.budgetFocus);
+    const data = await dataset('planner');
+    const result = recommend(templates, { description, choice, focus: $('build-focus').value, playstyle: $('build-style').value, gems: data.gems });
+    if (result.kind === 'match') await showGeneratedBuild(result.template, result.profile, result.reason, result.preference, result.budgetFocus, result.hints, result.alternatives);
     else {
-      showBuildChoices(result.suggestions ?? [], 'No matching build', result.message, () => openDraft({ description }));
+      showBuildChoices(result.suggestions ?? [], 'No matching build', result.message, result.allowDraft === false ? null : () => openDraft({ description }));
     }
   } catch (error) {
     showBuildChoices([], 'Build generator unavailable', error.message);
@@ -795,7 +840,7 @@ $('build-request').onsubmit = async event => {
 };
 $('show-templates').onclick = async () => {
   try {
-    showBuildChoices(await catalog(), 'Available builds', 'Choose an archetype to see the progression and PoB.');
+    showBuildChoices(await catalog(), 'Build library', 'Choose a skill or filter for a good first build.', null, true);
   } catch (error) {
     showBuildChoices([], 'Build generator unavailable', error.message);
   }
@@ -804,6 +849,7 @@ for (const chip of document.querySelectorAll('[data-prompt]')) chip.onclick = ()
   $('build-prompt').value = chip.dataset.prompt;
   $('build-class').value = '';
   $('build-focus').value = '';
+  $('build-style').value = '';
   $('build-request').requestSubmit();
 };
 $('export').onclick = async () => {

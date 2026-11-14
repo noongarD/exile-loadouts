@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Describe how you want to play Path of Exile 1 and get a build progression with a ready-to-open PoB link.">
-  <meta name="theme-color" content="#10161b">
+  <meta name="theme-color" content="#17110f">
   <meta property="og:title" content="Exile Loadouts">
   <meta property="og:description" content="Find a Path of Exile 1 build by class, skill and playstyle, with a ready-to-open PoB.">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
@@ -17,7 +17,8 @@
     <div class="shell topbar-inner">
       <a class="brand" href="./" aria-label="Exile Loadouts home"><img src="./assets/icon.svg" alt="" width="30" height="30"> Exile Loadouts</a>
       <nav aria-label="Main navigation">
-        <a href="#builder">Build generator</a>
+        <a href="#builder">Find a build</a>
+        <a href="#start-here">First build?</a>
         <a href="#covens">Covens 3.30</a>
         <a href="#workspace">Editor</a>
         <a href="https://github.com/noongarD/exile-loadouts" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
@@ -28,38 +29,58 @@
     <section id="builder" class="hero builder" aria-labelledby="hero-title">
       <div class="hero-content">
         <p class="eyebrow">PATH OF EXILE 1 · COVENS OF UMBRA 3.30</p>
-        <h1 id="hero-title">What do you<br>want to play?</h1>
+        <h1 id="hero-title">Find your<br>first build.</h1>
+        <p class="hero-description">Tell us how you like to fight. Get a build to follow from your first quest to maps, then make it your own.</p>
         <form id="build-request">
           <label class="field">Describe your build
-            <textarea id="build-prompt" rows="2" maxlength="600" placeholder="A cheap Witch minion build that can take on bosses"></textarea>
+            <textarea id="build-prompt" rows="2" maxlength="600" aria-describedby="prompt-help" placeholder="I’m new. I want minions to fight bosses for me."></textarea>
           </label>
-          <div class="form-grid">
-            <label class="field">Class or ascendancy<select id="build-class"><option value="">Any class</option></select></label>
-            <label class="field">Priority
-              <select id="build-focus">
+          <p id="prompt-help" class="prompt-help">Try a skill name or describe how you want to play, in English or Polish.</p>
+          <details id="builder-preferences" class="builder-preferences">
+            <summary>Choose a class or playstyle (optional)</summary>
+            <div class="form-grid">
+              <label class="field">Class or ascendancy<select id="build-class"><option value="">Any class</option></select></label>
+              <label class="field">Priority<select id="build-focus">
                 <option value="">Infer from description</option>
                 <option value="start">League start</option>
                 <option value="mapping">Fast mapping</option>
                 <option value="bossing">Bossing</option>
                 <option value="defence">Survivability</option>
-              </select>
-            </label>
-          </div>
+              </select></label>
+              <label class="field full">Playstyle<select id="build-style"><option value="">Any playstyle</option><option value="minion">Summon allies</option><option value="bow">Shoot from a distance</option><option value="melee">Fight up close</option><option value="spell">Cast spells</option><option value="totem">Place totems or ballistas</option><option value="poison">Poison enemies</option></select></label>
+            </div>
+          </details>
           <div class="actions">
             <button id="generate" class="primary" type="submit">Generate build <span aria-hidden="true">↗</span></button>
             <button id="show-templates" class="quiet" type="button">Browse builds</button>
             <button id="draft-open" class="secondary" type="button">Build from scratch</button>
           </div>
         </form>
-        <p class="catalog-note">Matches your request to a curated build and its loadouts.</p>
         <div class="actions prompt-examples" aria-label="Example build descriptions">
-          <button type="button" data-prompt="cheap Flicker Strike without Mageblood">Budget Flicker</button>
+          <button type="button" data-prompt="Beginner friendly, tanky fire aura">Easy and tanky</button>
           <button type="button" data-prompt="Witch minions for bossing">Minion bossing</button>
           <button type="button" data-prompt="Deadeye with a bow for fast maps">Fast bow mapper</button>
+          <button type="button" data-prompt="cheap Flicker Strike without Mageblood">Budget Flicker</button>
         </div>
       </div>
     </section>
     <section id="build-results" class="build-results" aria-live="polite" hidden></section>
+    <section id="start-here" class="start-section" aria-labelledby="start-heading">
+      <div class="section-heading"><h2 id="start-heading">Your first character</h2><p class="muted">Start with a campaign route and change one thing at a time.</p></div>
+      <ol class="start-steps">
+        <li><strong>Pick a skill</strong><p>Choose something you enjoy casting or attacking with. Use one main skill for damage and link support gems to it.</p></li>
+        <li><strong>Follow the campaign</strong><p>Open the first campaign loadout for skills and gear. In the editor, open the gem rewards to see which quests and vendors to visit.</p></li>
+        <li><strong>Make a copy</strong><p>Try a different support gem or passive path in the editor. Export it to the free Path of Building app to check the change.</p></li>
+      </ol>
+      <details class="subpanel glossary"><summary>New to Path of Building? Start here</summary>
+        <dl><dt>PoB</dt><dd>Path of Building calculates your damage and defences. A pobb.in link lets you view a shared build in the browser.</dd>
+        <dt>Loadout</dt><dd>A saved setup for one point in the build. Pick a loadout in PoB to switch the tree, gear, gems and settings together.</dd>
+        <dt>Import a code</dt><dd>In Path of Building, open Import/Export Build. Paste the code under Build Sharing and choose Import.</dd>
+        <dt>Ascendancy</dt><dd>Your character’s specialization. You unlock it by completing the Labyrinth during the campaign.</dd>
+        <dt>Resistances</dt><dd>Fire, cold and lightning resistance usually cap at 75%. Recheck your gear after beating Kitava in Acts 5 and 10.</dd></dl>
+        <a href="https://pathofbuilding.community/" target="_blank" rel="noopener noreferrer">Get Path of Building ↗</a>
+      </details>
+    </section>
     <section id="workspace" class="workspace" aria-labelledby="project-heading">
       <div class="workspace-head">
         <div>
@@ -74,6 +95,7 @@
           <button id="export" class="primary">Export build <span aria-hidden="true">↗</span></button>
         </div>
       </div>
+      <p id="workspace-help" class="workspace-help muted">Generate a build above, start a draft or import a Path of Building code.</p>
       <div class="workspace-grid">
         <aside class="sidebar panel" aria-label="Build progression">
           <div class="sidebar-title"><h3>Progression</h3><span id="stage-count" class="count">0</span></div>
