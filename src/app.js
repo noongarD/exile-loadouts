@@ -1,6 +1,7 @@
 import { compilePoB, CONDITIONS, decodePoB, encodePoB, EQUIPMENT, equippedItems, gemGroups, itemName, originalNotes, readSnapshot, savedMainGroup, sourceOptions, treeDiff } from './pob.js';
 import { addSource, fileStem, formatGuide, MAX_STAGES, newProject, newStage, normalizeProject, PHASES, pruneSources, STORAGE } from './project.js';
 import { CLASSES, FOCUS_LABELS, recommend } from './generator.js';
+import { draftRequest, findSkills, firstAcquisition, makeDraft, passivePath } from './planner.js';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor-body');
@@ -14,6 +15,9 @@ let exported;
 let storageAvailable = true;
 let buildCatalog;
 let buildRequest = 0;
+const datasets = new Map();
+const draftDialog = $('draft-dialog');
+let leaguePageSize = 12;
 const snapshots = new Map();
 try {
   const saved = localStorage.getItem(STORAGE);
@@ -75,7 +79,10 @@ function snapshot(stage) {
 }
 
 function comparisons() {
-  return project.stages.map((stage, index) => treeDiff(snapshot(project.stages[index - 1]), snapshot(stage)));
+  return project.stages.map((stage, index) => {
+    const before = project.stages[index - 1];
+    return treeDiff(snapshot(before), snapshot(stage), before?.edits, stage.edits);
+  });
 }
 
 function field(label, value, update, options = {}) {
@@ -149,6 +156,12 @@ function showProject() {
       field('Patch or league', project.patch, value => { project.patch = value; }, { placeholder: '3.30 · Covens of Umbra', maxLength: 50 }),
       field('Overview', project.overview, value => { project.overview = value; }, { multiline: true, full: true, rows: 4, maxLength: 18000,
         placeholder: 'Core mechanic, strengths, weaknesses and who this build is for.' })));
+  if (project.leagueNotes.length) editor.append(panel('Covens of Umbra notes', ...project.leagueNotes.map((note, index) =>
+    element('div', { className: 'league-result' }, muted(note), button('Remove note', () => {
+      project.leagueNotes.splice(index, 1);
+      persist();
+      render();
+    }, 'quiet danger')))));
 }
 
 function move(stage, offset) {
@@ -196,7 +209,7 @@ function showStage(stage) {
       field('Level', stage.level, change('level'), { type: 'number', min: 1, max: 100, step: 1 })),
     element('div', { className: 'snapshot-line' }, muted(snap ? project.sources[stage.source].name : 'No PoB snapshot attached'),
       button(snap ? 'Change snapshot' : 'Attach snapshot', () => openImport(true))),
-    ...(snap ? [showSets(stage, snap)] : []),
+    ...(snap ? [showSets(stage, snap), stageResearch(stage, snap), ...(snap.treeVersion === '3_29' ? [passiveEditor(stage, snap)] : [])] : []),
     grid(...stageFields.map(([label, key, placeholder], i) =>
       field(label, stage[key], value => { stage[key] = value; }, { multiline: true, full: i === 4, placeholder }))),
     element('div', { className: 'editor-footer' }, defaultButton, actions(
@@ -219,21 +232,97 @@ function showStage(stage) {
 }
 
 function showSets(stage, snap) {
-  const before = snapshot(project.stages[project.stages.indexOf(stage) - 1]);
-  const diff = treeDiff(before, snap);
+  const prior = project.stages[project.stages.indexOf(stage) - 1];
+  const diff = treeDiff(snapshot(prior), snap, prior?.edits, stage.edits);
   const choose = Object.entries(snap.labels).map(([name, labels], index) =>
     select(`${name[0].toUpperCase()}${name.slice(1)} set`, String(stage.selection[index]),
       labels.map((title, i) => [String(i), title]), value => {
         stage.selection[index] = Number(value);
+        if (name === 'tree') delete stage.edits.passiveNodes;
         if (name === 'skills') {
           stage.edits.main = savedMainGroup(snapshot(stage), stage.selection);
           stage.edits.gems = {};
+          delete stage.edits.links;
         }
         render();
       }));
   return panel('Snapshot sets and passive changes', grid(...choose), muted(diff
     ? `${diff.removed} removed · ${diff.added} added · ${diff.masteryChanges} mastery choices changed${diff.ascendancyChanged ? ' · Ascendancy differs' : ''}. Check the actual refund cost in PoB.`
     : 'Passive changes appear when this and the previous stage have compatible tree versions.'));
+}
+
+function passiveEditor(stage, snap) {
+  const search = element('input', { type: 'search', placeholder: 'e.g. Master Fletcher' });
+  const rows = element('div', {});
+  const feedback = muted('Choose a passive to add the shortest connected route.');
+  const reset = button('Reset added passives', () => {
+    delete stage.edits.passiveNodes;
+    persist();
+    showMatches();
+  }, 'quiet');
+  const details = panel('Plan a passive path', element('label', { className: 'field' }, 'Search passives', search), feedback, rows, reset);
+  let data;
+  const baseIds = (snap.tree.getAttribute('nodes') || '').split(',').filter(Boolean);
+  function showMatches() {
+    if (!data) return;
+    const added = stage.edits.passiveNodes ?? [];
+    reset.disabled = !added.length;
+    feedback.textContent = `${added.length} nodes added to this stage. Check your passive-point budget and mastery choices in PoB.`;
+    const term = search.value.trim().toLowerCase();
+    const selectedIds = [...baseIds, ...added];
+    const matches = term.length >= 2 ? Object.entries(data.graph).filter(([id, node]) => !selectedIds.includes(id) &&
+      !node[3] && node[2] == null && !node[4] && node[0].toLowerCase().includes(term)).slice(0, 12) : [];
+    rows.replaceChildren(...matches.map(([id, node]) => {
+      const path = passivePath(data, selectedIds, id);
+      return button(`${node[0]} · ${path.length || 'No path'}${path.length ? ' points' : ''}`, () => {
+        stage.edits.passiveNodes = [...added, ...path];
+        persist();
+        showMatches();
+      }, 'quiet', { disabled: !path.length || added.length + path.length > 180 });
+    }));
+  }
+  search.oninput = showMatches;
+  details.addEventListener('toggle', async () => {
+    if (!details.open) return;
+    try { data = await dataset('planner'); showMatches(); }
+    catch (error) { feedback.textContent = error.message; }
+  });
+  return details;
+}
+
+function stageResearch(stage, snap) {
+  const output = element('div', {});
+  const details = panel('3.30 gem rewards and tree changes', output);
+  details.addEventListener('toggle', async () => {
+    if (!details.open || output.dataset.loaded) return;
+    output.textContent = 'Loading 3.30 data…';
+    try {
+      const data = await dataset('planner');
+      const className = snap.build.getAttribute('className');
+      const names = [...new Set([...gemGroups(snap).flatMap((group, index) => group.gems
+        .filter(gem => stage.edits.gems[`${index}:${gem.index}`]?.enabled ?? gem.enabled).map(gem => gem.name)),
+        ...stage.edits.extraGroups.flatMap(group => group.gems), ...Object.values(stage.edits.links ?? {}).flat()])];
+      const changes = snap.treeVersion === '3_29' ? (snap.tree.getAttribute('nodes') || '').split(',')
+        .map(id => data.treeChanges[id]).filter(Boolean) : [];
+      const lines = names.map(name => {
+        const route = firstAcquisition(data, name, className);
+        if (!route) return `${name} · check the gem’s specific acquisition.`;
+        const [act, quest, npc, , method] = route;
+        return `${name} · Act ${act} · ${quest} · ${method === 'quest' ? 'Quest reward' : `Buy from ${npc || 'vendor'}`}`;
+      });
+      output.dataset.loaded = 'yes';
+      output.replaceChildren(...(changes.length ? [muted(`3.30 changed ${[...new Set(changes.map(change => change.name))].join(', ')} in this tree. Review those nodes before migration.`)] : []),
+        element('ul', {}, ...lines.map(line => element('li', {}, line))),
+        button('Add gem route to this stage', () => {
+          const newText = ['Gem acquisition', ...lines].join('\n');
+          if (!stage.goal.includes(newText)) stage.goal = [stage.goal, newText].filter(Boolean).join('\n\n').slice(0, 6000);
+          persist();
+          render();
+          status('Gem route added to the stage notes.');
+        }, 'secondary', { disabled: !lines.length }));
+    } catch (error) { output.textContent = error.message; }
+  });
+  return details;
 }
 
 function showGear(stage) {
@@ -273,6 +362,8 @@ function showSkills(stage) {
   editor.append(element('h3', {}, 'Skills and configuration'), muted('Edit socket groups and set combat assumptions for this stage. Path of Building calculates the results after import.'));
   if (names.length) editor.append(select('Main skill group', String(edits.main), names.map((name, index) => [String(index), name]), value => { edits.main = Number(value); }));
   for (const [index, group] of groups.entries()) {
+    const links = edits.links?.[index] ?? [];
+    const capacity = Math.max(0, 6 - group.gems.length);
     editor.append(panel(`${group.slot ? `${group.slot} · ` : ''}${group.label || group.gems[0]?.name || 'Socket group'}`,
       ...group.gems.map(gem => {
         const key = `${index}:${gem.index}`;
@@ -286,7 +377,9 @@ function showSkills(stage) {
           field('Level', edit.level ?? gem.level, value => change('level', value), { type: 'number', min: 1, max: 100 }),
           field('Quality', edit.quality ?? gem.quality, value => change('quality', value), { type: 'number', min: 0, max: 100 }),
           check('Active', edit.enabled ?? gem.enabled, value => change('enabled', value)));
-      })));
+      }), ...(capacity ? [field('Additional support gems', links.join(', '), value => {
+        (edits.links ??= {})[index] = value.split(',').map(name => name.trim()).filter(Boolean).slice(0, capacity);
+      }, { placeholder: 'e.g. Mirage Archer, Added Cold Damage', maxLength: 500 })] : [])));
   }
   const extras = edits.extraGroups.map((group, index) =>
     element('div', { className: 'snapshot-line' }, `${group.slot} · ${group.gems.join(' + ')} (${group.level}/${group.quality})`,
@@ -479,6 +572,125 @@ async function catalog() {
   return buildCatalog;
 }
 
+function dataset(name) {
+  if (!datasets.has(name)) datasets.set(name, fetch(new URL(`../data/${name}.json`, import.meta.url))
+    .then(response => {
+      if (!response.ok) throw new Error(`Could not load the ${name} data.`);
+      return response.json();
+    }).catch(error => {
+      datasets.delete(name);
+      throw error;
+    }));
+  return datasets.get(name);
+}
+
+let draftData;
+let draftNote = '';
+
+function populateDraftAscendancies(value = '') {
+  const current = draftData.classes.find(row => row.name === $('draft-class').value);
+  $('draft-ascendancy').replaceChildren(element('option', { value: '' }, 'Choose later'),
+    ...current.ascendancies.map(row => element('option', { value: row.name }, row.name)));
+  if (current.ascendancies.some(row => row.name === value)) $('draft-ascendancy').value = value;
+}
+
+function drawDraftSkills() {
+  const field = $('draft-skill');
+  const previous = field.value;
+  const query = $('draft-search').value;
+  const matching = findSkills(draftData, query);
+  field.replaceChildren(...matching.map(gem => element('option', { value: gem.name, disabled: !gem.pob },
+    gem.pob ? gem.name : `${gem.name} · requires a PoB update`)));
+  const exact = matching.find(gem => gem.name.toLowerCase() === query.trim().toLowerCase());
+  field.value = exact?.name ?? (matching.some(gem => gem.name === previous && gem.pob) ? previous : (query ? matching.find(gem => gem.pob)?.name : '')) ?? '';
+  updateDraftSkillStatus();
+}
+
+function updateDraftSkillStatus() {
+  const skill = draftData.gems[$('draft-skill').value];
+  $('draft-skill-status').textContent = skill?.pob ? `${skill.name} requires level ${skill.level}+.` :
+    skill ? `${skill.name} requires a PoB update to export.` : 'Select an active skill supported by PoB 2.67.2.';
+  $('draft-create').disabled = !skill?.pob;
+}
+
+async function openDraft({ description = '' } = {}) {
+  if (!draftDialog.open) draftDialog.showModal();
+  $('draft-create').disabled = true;
+  try {
+    draftData = await dataset('planner');
+    draftNote = description;
+    const { query, choice } = draftRequest(draftData, description, $('build-class').value);
+    $('draft-class').replaceChildren(...draftData.classes.map(row => element('option', { value: row.name }, row.name)));
+    const match = draftData.classes.find(row => row.name === choice || row.ascendancies.some(asc => asc.name === choice));
+    if (match) $('draft-class').value = match.name;
+    populateDraftAscendancies(choice);
+    $('draft-search').value = query;
+    $('draft-skill').value = '';
+    drawDraftSkills();
+    status('', false, $('draft-status'));
+  } catch (error) { status(error.message, true, $('draft-status')); }
+}
+
+function attachLeagueNote(name, note, source) {
+  if (!project.stages.length) {
+    status('Open or create a build before adding a league note.', true, $('league-status'));
+    return;
+  }
+  const line = `${name} · ${note || 'Review its tier, effect and activation conditions.'} ${source}`;
+  if (project.leagueNotes.includes(line)) {
+    status('This note is already in your build.', false, $('league-status'));
+    return;
+  }
+  if (project.leagueNotes.length >= 25) {
+    status('Your build already has 25 league notes.', true, $('league-status'));
+    return;
+  }
+  project.leagueNotes.push(line);
+  persist();
+  if (tab === 'guide') render();
+  status(`${name} added to the build guide.`, false, $('league-status'));
+}
+
+async function drawLeague() {
+  const query = $('league-search').value.toLowerCase().trim();
+  const category = $('league-category').value;
+  const output = $('league-results');
+  try {
+    const data = await dataset('covens');
+    if (category !== $('league-category').value || query !== $('league-search').value.toLowerCase().trim()) return;
+    const records = category === 'threads' ? data.threads.map(name => ({ name, source: data.topics.find(topic => topic.id === 'threads').source })) : data[category];
+    const rows = records.filter(item => `${item.name} ${item.text || ''} ${(item.tags || []).join(' ')}`.toLowerCase().includes(query));
+    status(rows.length ? `${rows.length} entries` : 'No league entries match that search.', false, $('league-status'));
+    output.replaceChildren(...rows.slice(0, leaguePageSize).map(item => {
+      const note = item.text || data.highlights[item.name];
+      return element('article', { className: 'league-result' }, element('h3', {}, item.name), note && muted(note),
+        actions(button('Add to build notes', () => attachLeagueNote(item.name, note, item.source), 'quiet'),
+          element('a', { href: item.source, target: '_blank', rel: 'noopener noreferrer' }, 'Source ↗')));
+    }));
+    $('league-more').hidden = rows.length <= leaguePageSize;
+  } catch (error) { status(error.message, true, $('league-status')); }
+}
+
+$('draft-open').onclick = () => openDraft({ description: $('build-prompt').value });
+$('draft-class').onchange = () => populateDraftAscendancies();
+$('draft-search').oninput = drawDraftSkills;
+$('draft-skill').onchange = updateDraftSkillStatus;
+$('draft-form').onsubmit = event => {
+  event.preventDefault();
+  try {
+    const next = makeDraft(draftData, { className: $('draft-class').value, ascendancy: $('draft-ascendancy').value,
+      skillName: $('draft-skill').value, notes: draftNote });
+    if (!mayReplace()) return;
+    replaceProject(next, 'stage');
+    draftDialog.close();
+    $('workspace').scrollIntoView({ block: 'start' });
+    status('Draft created. Refine the tree, links and gear before comparing performance.');
+  } catch (error) { status(error.message, true, $('draft-status')); }
+};
+for (const id of ['league-category', 'league-search']) $(id).oninput = () => { leaguePageSize = 12; drawLeague(); };
+$('league-more').onclick = () => { leaguePageSize += 12; drawLeague(); };
+drawLeague();
+
 async function loadGeneratedProject(template, focus) {
   const data = await fetchBuildFile(template.file);
   data.defaultId = data.stages[template.profiles[focus]].id;
@@ -496,6 +708,7 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
     const initial = generated.stages.find(stage => stage.id === generated.defaultId);
     const treeVersion = readSnapshot(generated.sources[initial.source].xml, initial.selection).treeVersion;
     const link = template.links[focus];
+    const profileLabel = link ? 'Open on pobb.in ↗' : 'Original guide PoB ↗';
     const feedback = element('p', { className: 'feedback', role: 'status' });
     const openEditor = button('Edit this build', () => {
       if (!mayReplace()) return;
@@ -525,7 +738,7 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
       ...(requested !== focus ? [muted(`The catalog has no dedicated ${FOCUS_LABELS[requested].toLowerCase()} loadout for this build. It opens on ${FOCUS_LABELS[focus].toLowerCase()}.`)] : []),
       element('ol', { className: 'result-stages', 'aria-label': 'Build progression' }, ...generated.stages.map(stage =>
         element('li', { className: `phase-${stage.phase}` }, stage.title))),
-      actions(element('a', { className: 'button primary', href: link, target: '_blank', rel: 'noopener noreferrer' }, 'Open on pobb.in ↗'), openEditor, copy),
+      actions((link || template.reference) && element('a', { className: 'button primary', href: link || template.reference, target: '_blank', rel: 'noopener noreferrer' }, profileLabel), openEditor, copy),
       feedback,
       element('p', { className: 'muted credit' }, 'Build reference by ',
         element('a', { href: template.guide, target: '_blank', rel: 'noopener noreferrer' }, template.author),
@@ -537,11 +750,12 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
   }
 }
 
-function showBuildChoices(templates, heading, message) {
+function showBuildChoices(templates, heading, message, draftAction) {
   buildRequest++;
   const results = $('build-results');
   results.hidden = false;
   results.replaceChildren(element('h2', {}, heading), ...(message ? [muted(message)] : []),
+    ...(draftAction ? [button('Make a custom draft', draftAction)] : []),
     element('div', { className: 'catalog-grid' }, ...templates.map(template => element('article', { className: 'panel catalog-card' },
       element('p', { className: 'eyebrow' }, template.ascendancy), element('h3', {}, template.title),
       muted(template.summary), button('Generate this build', () => showGeneratedBuild(template, template.defaultFocus, 'Selected build'))))));
@@ -559,9 +773,20 @@ $('build-request').onsubmit = async event => {
   trigger.disabled = true;
   try {
     const templates = await catalog();
-    const result = recommend(templates, { description: $('build-prompt').value, choice: $('build-class').value, focus: $('build-focus').value });
+    const description = $('build-prompt').value;
+    const choice = $('build-class').value;
+    const result = recommend(templates, { description, choice, focus: $('build-focus').value });
+    const request = description && draftRequest(await dataset('planner'), description, choice);
+    const unmatchedSkill = request?.query && result.kind === 'match' &&
+      !result.template.aliases.some(alias => alias.toLowerCase() === request.query.toLowerCase());
+    if (unmatchedSkill) {
+      showBuildChoices([], 'No matching build', `No curated template combines ${request.query} with that request.`, () => openDraft({ description }));
+      return;
+    }
     if (result.kind === 'match') await showGeneratedBuild(result.template, result.profile, result.reason, result.preference, result.budgetFocus);
-    else showBuildChoices(result.suggestions ?? [], 'No matching build', result.message);
+    else {
+      showBuildChoices(result.suggestions ?? [], 'No matching build', result.message, () => openDraft({ description }));
+    }
   } catch (error) {
     showBuildChoices([], 'Build generator unavailable', error.message);
   } finally {

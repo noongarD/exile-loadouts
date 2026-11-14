@@ -240,6 +240,13 @@ function editSkills(doc, skills, edits) {
     for (const key of ['level', 'quality']) if (values[key] !== undefined) gem.setAttribute(key, values[key]);
     if (values.enabled !== undefined) gem.setAttribute('enabled', values.enabled);
   }
+  for (const [index, names] of Object.entries(edits.links ?? {})) {
+    const group = groups[index];
+    if (!group) continue;
+    for (const name of names.slice(0, Math.max(0, 6 - direct(group, 'Gem').length))) {
+      addElement(doc, group, 'Gem', { nameSpec: name, level: 1, quality: 0, enabled: true, count: 1, enableGlobal1: true, enableGlobal2: true });
+    }
+  }
   for (const custom of edits.extraGroups ?? []) {
     const group = addElement(doc, skills, 'Skill', { slot: custom.slot, enabled: true, mainActiveSkill: 1 });
     for (const name of custom.gems) {
@@ -333,6 +340,11 @@ export function compilePoB(project, notes) {
       return copy;
     });
     const [, items, skills, config] = copies;
+    if (stage.edits?.passiveNodes?.length) {
+      const tree = copies[0];
+      const nodes = [...new Set([...attr(tree, 'nodes').split(',').filter(Boolean), ...stage.edits.passiveNodes])];
+      tree.setAttribute('nodes', nodes.join(','));
+    }
     writeItems(doc, itemSection, items, stage.alternatives ?? [], register);
     for (const gem of skills.querySelectorAll('Gem')) {
       for (const field of ['skillMinionItemSet', 'skillMinionItemSetCalcs']) {
@@ -392,11 +404,11 @@ export function savedMainGroup(snapshot, selection) {
   return Math.max(0, groups.filter(group => !attr(group, 'source')).indexOf(groups[index]));
 }
 
-export function treeDiff(before, after) {
+export function treeDiff(before, after, beforeEdits, afterEdits) {
   if (!before || before.treeVersion !== after?.treeVersion || before.classKey !== after.classKey) return null;
-  const nodes = snap => new Set(attr(snap.tree, 'nodes').match(/\d+/g) ?? []);
-  const previous = nodes(before);
-  const current = nodes(after);
+  const nodes = (snap, edits) => new Set([...(attr(snap.tree, 'nodes').match(/\d+/g) ?? []), ...(edits?.passiveNodes ?? [])]);
+  const previous = nodes(before, beforeEdits);
+  const current = nodes(after, afterEdits);
   if (!previous.size || !current.size) return null;
   const mastery = snap => new Map([...attr(snap.tree, 'masteryEffects').matchAll(/\{(\d+),(\d+)\}/g)].map(([, id, value]) => [id, value]));
   const nextMastery = mastery(after);

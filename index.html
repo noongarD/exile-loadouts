@@ -18,6 +18,7 @@
       <a class="brand" href="./" aria-label="Exile Loadouts home"><img src="./assets/icon.svg" alt="" width="30" height="30"> Exile Loadouts</a>
       <nav aria-label="Main navigation">
         <a href="#builder">Build generator</a>
+        <a href="#covens">Covens 3.30</a>
         <a href="#workspace">Editor</a>
         <a href="https://github.com/noongarD/exile-loadouts" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </nav>
@@ -26,7 +27,7 @@
   <main class="shell">
     <section id="builder" class="hero builder" aria-labelledby="hero-title">
       <div class="hero-content">
-        <p class="eyebrow">PATH OF EXILE 1 · SOFTCORE TRADE</p>
+        <p class="eyebrow">PATH OF EXILE 1 · COVENS OF UMBRA 3.30</p>
         <h1 id="hero-title">What do you<br>want to play?</h1>
         <form id="build-request">
           <label class="field">Describe your build
@@ -47,6 +48,7 @@
           <div class="actions">
             <button id="generate" class="primary" type="submit">Generate build <span aria-hidden="true">↗</span></button>
             <button id="show-templates" class="quiet" type="button">Browse builds</button>
+            <button id="draft-open" class="secondary" type="button">Build from scratch</button>
           </div>
         </form>
         <p class="catalog-note">Matches your request to a curated build and its loadouts.</p>
@@ -86,11 +88,38 @@
       </div>
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </section>
+    <section id="covens" class="workspace league-section" aria-labelledby="covens-heading">
+      <div class="workspace-head"><div><h2 id="covens-heading">Covens of Umbra</h2><p class="muted">3.30 league mechanics, gear and Wickerman effects</p></div></div>
+      <div class="panel league-panel">
+        <div class="form-grid">
+          <label class="field">Search league data<input id="league-search" type="search" placeholder="Viscera, Maven, Threads…"></label>
+          <label class="field">League category<select id="league-category" aria-label="League category"><option value="topics">Mechanics and gear</option><option value="viscera">Wickerman Viscera</option><option value="fates">Fates</option><option value="threads">Threads</option></select></label>
+        </div>
+        <p id="league-status" class="muted" role="status"></p>
+        <div id="league-results" class="league-results"></div>
+        <button id="league-more" type="button" class="quiet" hidden>Show more</button>
+      </div>
+    </section>
   </main>
   <footer class="shell footer">
     <span>Exile Loadouts is a community tool for Path of Exile 1.</span>
     <a href="https://pathofbuilding.community/" target="_blank" rel="noopener noreferrer">Path of Building ↗</a>
   </footer>
+  <dialog id="draft-dialog" aria-labelledby="draft-heading">
+    <div class="dialog-head"><h2 id="draft-heading">New build draft</h2><button class="icon" data-close="draft-dialog" aria-label="Close">×</button></div>
+    <p>Start with campaign and early-map loadouts. The initial trees, gems and gear are editable.</p>
+    <form id="draft-form">
+      <div class="form-grid">
+        <label class="field">Base class<select id="draft-class" required></select></label>
+        <label class="field">Draft ascendancy<select id="draft-ascendancy"></select></label>
+        <label class="field full">Find an active skill<input id="draft-search" type="search" placeholder="e.g. Tornado Shot"></label>
+        <label class="field full">Active skill<select id="draft-skill" aria-label="Active skill" required size="5"></select></label>
+      </div>
+      <p id="draft-skill-status" class="muted" aria-live="polite"></p>
+      <div class="actions"><button id="draft-create" class="primary" type="submit">Create editable PoB</button></div>
+      <p id="draft-status" class="feedback" role="status"></p>
+    </form>
+  </dialog>
   <dialog id="import-dialog" aria-labelledby="import-heading">
     <div class="dialog-head"><h2 id="import-heading">Import PoB</h2><button class="icon" data-close="import-dialog" aria-label="Close">×</button></div>
     <p>Paste a PoB build code or choose a PoB XML file. For a pobb.in link, open the page and copy its build code.</p>

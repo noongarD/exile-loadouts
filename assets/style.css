@@ -47,7 +47,7 @@ button:disabled { cursor: default; opacity: .48; }
 .shell { width: min(1200px, calc(100% - 64px)); margin-inline: auto; }
 .topbar { border-bottom: 1px solid #222d34; background: #10161b; }
 .topbar-inner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-.topbar nav { display: flex; gap: 24px; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .topbar a { color: #dae5e6; text-decoration: none; }
 .topbar a:hover { color: var(--accent); }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-size: 16px; font-weight: 740; white-space: nowrap; }
@@ -84,6 +84,17 @@ button:disabled { cursor: default; opacity: .48; }
 .result-stages li { padding: 3px 7px; border: 1px solid #334449; border-radius: 5px; font-size: 12px; }
 .generated-card .feedback:empty { display: none; }
 .credit { margin-top: 10px; font-size: 12px; }
+.league-panel { padding: 18px; }
+.league-panel > .muted { margin-block: 10px; }
+.league-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 10px; }
+.league-result { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--field); }
+.league-result .actions { margin-top: 8px; }
+.league-result h3 { font-size: 15px; margin-bottom: 4px; }
+.league-result button { min-height: 32px; padding: 4px 8px; }
+.league-section { margin-bottom: 24px; }
+#draft-skill { padding: 4px; }
+#draft-skill option { padding: 3px 6px; }
+#draft-skill-status { margin-top: 10px; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .workspace { scroll-margin-top: 16px; margin-top: 32px; }
 .workspace-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 15px; }

@@ -12,7 +12,7 @@ const plain = value => value.trim().replace(/\^x[\da-f]{6}|\^\d/gi, '');
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 
 export const newProject = () => ({
-  version: 1, title: 'Untitled build', patch: '', overview: '', sources: {}, stages: [], defaultId: '',
+  version: 1, title: 'Untitled build', patch: '', overview: '', leagueNotes: [], sources: {}, stages: [], defaultId: '',
 });
 
 export function newStage(source, option, xml, title = option?.title || 'New stage') {
@@ -43,6 +43,7 @@ export function normalizeProject(data) {
   project.patch = str(data.patch, 50);
   if (typeof data.ascendancy === 'string') project.ascendancy = str(data.ascendancy, 60);
   project.overview = str(data.overview, 18000);
+  if (Array.isArray(data.leagueNotes)) project.leagueNotes = data.leagueNotes.slice(0, 25).map(note => str(note, 1200)).filter(Boolean);
   const sources = new Map();
   for (const [key, source] of Object.entries(data.sources)) {
     if (!object(source) || typeof source.xml !== 'string') throw new Error('A snapshot in this project is invalid.');
@@ -80,6 +81,11 @@ export function normalizeProject(data) {
     if (object(candidate.edits)) {
       const { main, gems, extraGroups } = candidate.edits;
       stage.edits.main = Number.isInteger(main) && main >= 0 ? main : 0;
+      if (Array.isArray(candidate.edits.passiveNodes)) stage.edits.passiveNodes = [...new Set(candidate.edits.passiveNodes
+        .map(String).filter(key => /^\d{1,5}$/.test(key)))].slice(0, 180);
+      if (object(candidate.edits.links)) stage.edits.links = Object.fromEntries(Object.entries(candidate.edits.links).slice(0, 30)
+        .filter(([key, names]) => /^\d+$/.test(key) && Array.isArray(names))
+        .map(([key, names]) => [key, names.slice(0, 5).map(name => str(name, 100).trim()).filter(Boolean)]));
       if (object(gems)) {
         for (const [key, gem] of Object.entries(gems).slice(0, 300)) {
           if (!/^\d+:\d+$/.test(key) || !object(gem)) continue;
@@ -115,6 +121,10 @@ export function formatGuide(project, { markdown = false, diffs = [] } = {}) {
   const text = [markdown ? `# ${title}` : `^x79DCC5${title}^7`];
   if (project.patch.trim()) text.push(`Path of Exile ${plain(project.patch)}`);
   if (project.overview.trim()) text.push('', plain(project.overview));
+  if (project.leagueNotes?.length) {
+    text.push('', markdown ? '## Covens of Umbra notes' : '^xE4AC60Covens of Umbra notes^7',
+      ...project.leagueNotes.map(note => `- ${plain(note)}`));
+  }
   if (project.stages.length && !markdown) text.push('', 'Use Loadouts to switch the tree, items, skills and configuration together. Set your character level for the stage.');
   for (const [index, stage] of project.stages.entries()) {
     const label = loadoutName(stage, index);
@@ -125,6 +135,7 @@ export function formatGuide(project, { markdown = false, diffs = [] } = {}) {
     }
     const diff = diffs[index];
     if (diff) text.push(`- Passive tree vs previous stage — ${diff.removed} removed, ${diff.added} added${diff.masteryChanges ? `, ${diff.masteryChanges} mastery choices changed` : ''}${diff.ascendancyChanged ? ', ascendancy differs' : ''}. Confirm actual refund cost in PoB.`);
+    if (stage.edits?.passiveNodes?.length) text.push(`- Custom path — ${stage.edits.passiveNodes.length} passive nodes added in the web editor.`);
     for (const entry of stage.alternatives) {
       text.push(`- ${entry.slot || 'Gear'} ${entry.equipped ? 'override' : 'alternative'} — ${plain(entry.name || itemName(entry.raw))}${entry.why.trim() ? `. ${plain(entry.why)}` : ''}`);
     }

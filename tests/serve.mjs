@@ -17,4 +17,4 @@ createServer(async (request, response) => {
     response.writeHead(404);
     response.end('Not found');
   }
-}).listen(4173, '127.0.0.1', () => console.log('Exile Loadouts running at http://127.0.0.1:4173'));
+}).listen(process.env.EXILE_PORT || 4173, '127.0.0.1', () => console.log(`Exile Loadouts running at http://127.0.0.1:${process.env.EXILE_PORT || 4173}`));

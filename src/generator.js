@@ -5,7 +5,7 @@ export const CLASSES = {
   Shadow: ['Assassin', 'Saboteur', 'Trickster'],
   Templar: ['Hierophant', 'Guardian', 'Inquisitor'],
   Witch: ['Necromancer', 'Elementalist', 'Occultist'],
-  Scion: ['Ascendant'],
+  Scion: ['Ascendant', 'Reliquarian', 'Luminary'],
 };
 
 const KEYWORDS = {
@@ -87,7 +87,8 @@ export function recommend(catalog, { description = '', choice = '', focus = '' }
   if (tokens.length && !choice && !named.length && !exact.length && !styles.length && !focuses.length && !focus && !excludedItems.length) {
     return { kind: 'unavailable', message: 'Try a class, skill or playstyle such as totems, minions or melee.' };
   }
-  const sort = template => Number(Object.hasOwn(template.profiles, preference)) * 4 +
+  const sort = template => 7 * Math.max(0, ...template.aliases.filter(alias => mention(tokens, alias) === 1).map(alias => normalizeTerms(alias).split(' ').length)) +
+    Number(Object.hasOwn(template.profiles, preference)) * 4 +
     Number(Object.hasOwn(template.profiles, requested)) * 2 + styles.filter(style => template.styles.includes(style)).length * 2;
   eligible.sort((a, b) => sort(b) - sort(a));
   const [template] = eligible;

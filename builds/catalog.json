@@ -243,5 +243,67 @@
       "mapping": "https://pobb.in/66fovDCCOwh9",
       "bossing": "https://pobb.in/2UkplNgvSwtr"
     }
+  },
+  {
+    "id": "static-strike-guardian",
+    "title": "Static Strike Guardian",
+    "className": "Templar",
+    "ascendancy": "Guardian",
+    "author": "Alohaa",
+    "guide": "https://www.reddit.com/r/PathOfExileBuilds/comments/1xtf3nx/my_330_static_strike_guardian_leaguestarter/",
+    "reference": "https://pobb.in/0rKXrao_8pGM",
+    "summary": "Level with Frost Blades or Spectral Throw, then switch to Static Strike and develop the Guardian setup.",
+    "aliases": [
+      "static strike",
+      "static strike guardian"
+    ],
+    "styles": [
+      "melee"
+    ],
+    "profiles": {
+      "start": 4,
+      "mapping": 6,
+      "bossing": 7,
+      "defence": 6
+    },
+    "defaultFocus": "start",
+    "file": "static-strike-guardian.json",
+    "links": {
+      "start": "https://pobb.in/GSAA8RRajwQC",
+      "mapping": "https://pobb.in/2SC5vF64Wcnj",
+      "bossing": "https://pobb.in/cS69N0eFnL4X",
+      "defence": "https://pobb.in/2SC5vF64Wcnj"
+    }
+  },
+  {
+    "id": "explosive-arrow-hierophant",
+    "title": "Explosive Arrow Ballista Hierophant",
+    "className": "Templar",
+    "ascendancy": "Hierophant",
+    "author": "POEGuy",
+    "guide": "https://www.poe-vault.com/guides/explosive-arrow-ballista-hierophant-build-guide",
+    "reference": "https://pobb.in/kQGOsJn7IbQX",
+    "summary": "Level with Holy Flame Totem and transition to hit-based Explosive Arrow Ballistas.",
+    "aliases": [
+      "explosive arrow",
+      "explosive arrow ballista",
+      "ea ballista"
+    ],
+    "styles": [
+      "bow",
+      "totem"
+    ],
+    "profiles": {
+      "start": 3,
+      "mapping": 4,
+      "bossing": 5
+    },
+    "defaultFocus": "start",
+    "file": "explosive-arrow-hierophant.json",
+    "links": {
+      "start": "https://pobb.in/yReAHQ6rTg4y",
+      "mapping": "https://pobb.in/GizZNQEdeX79",
+      "bossing": "https://pobb.in/HPWcymUwSdUT"
+    }
   }
 ]

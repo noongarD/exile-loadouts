@@ -165,3 +165,56 @@ test('includes a bossing loadout when prioritizing a budget start', async ({ pag
   await page.getByRole('button', { name: 'Generate build', exact: true }).click();
   await expect(result).toContainText('Opens at Endgame · Poison SRS');
 });
+
+test('creates an exportable draft for a skill outside the catalog', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Class or ascendancy').selectOption('Deadeye');
+  await page.getByLabel('Describe your build').fill('Tornado Shot');
+  await page.getByRole('button', { name: 'Generate build', exact: true }).click();
+  await page.getByRole('button', { name: 'Make a custom draft' }).click();
+  const form = page.getByRole('dialog', { name: 'New build draft' });
+  await expect(form.getByLabel('Base class')).toHaveValue('Ranger');
+  await expect(form.getByLabel('Active skill', { exact: true })).toHaveValue('Tornado Shot');
+  await form.getByRole('button', { name: 'Create editable PoB' }).click();
+  await expect(page.getByRole('heading', { name: 'Tornado Shot Deadeye' })).toBeVisible();
+  await expect(page.locator('#stage-list button')).toHaveCount(3);
+  await page.getByRole('button', { name: /Early maps/ }).click();
+  await page.getByText('Plan a passive path', { exact: true }).click();
+  await page.getByLabel('Search passives').fill('Master Fletcher');
+  await page.getByRole('button', { name: /Master Fletcher.*points/ }).first().click();
+  await page.getByRole('button', { name: 'Skills & config' }).click();
+  await page.getByText('Body Armour · Tornado Shot', { exact: true }).click();
+  await page.getByLabel('Additional support gems').fill('Mirage Archer');
+  await page.getByRole('button', { name: 'Stage', exact: true }).click();
+  await page.getByText('3.30 gem rewards and tree changes', { exact: true }).click();
+  await page.getByRole('button', { name: 'Add gem route to this stage' }).click();
+  await page.getByRole('button', { name: 'Set as export default' }).click();
+  await page.getByRole('button', { name: 'Export build' }).click();
+  await expect(page.locator('#export-dialog')).toBeVisible();
+  const code = await page.getByLabel('Path of Building code').inputValue();
+  const xml = inflateSync(Buffer.from(code, 'base64url')).toString('utf8');
+  expect(xml).toContain('treeVersion="3_29"');
+  expect(xml).toContain('nameSpec="Tornado Shot"');
+  expect(xml).toContain('nameSpec="Mirage Archer"');
+  expect(xml).toContain('activeSpec="3"');
+  expect(xml).toContain('Custom path');
+  expect(xml).toContain('Gem acquisition');
+});
+
+test('saves a 3.30 league note inside the exported PoB', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Budget Flicker' }).click();
+  await page.getByRole('button', { name: 'Edit this build' }).click();
+  await page.getByLabel('League category', { exact: true }).selectOption('viscera');
+  await page.getByLabel('Search league data').fill('Maven');
+  const item = page.locator('.league-result').filter({ has: page.getByRole('heading', { name: "Maven's Orrery" }) });
+  await item.getByRole('button', { name: 'Add to build notes' }).click();
+  await expect(page.locator('#league-status')).toContainText('added to the build guide');
+  await page.getByRole('button', { name: 'Export build' }).click();
+  await expect(page.locator('#export-dialog')).toBeVisible();
+  const code = await page.getByLabel('Path of Building code').inputValue();
+  const xml = inflateSync(Buffer.from(code, 'base64url')).toString('utf8');
+  expect(xml).toContain('Covens of Umbra notes');
+  expect(xml).toContain("Maven's Orrery");
+  expect(xml).toContain('Skip the resistance reduction on inversion setups');
+});
