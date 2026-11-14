@@ -10,7 +10,8 @@ test('exports the demo with linked loadouts and a persistent editable project', 
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Try Flicker Strike example' }).click();
+  await page.getByRole('button', { name: 'Budget Flicker' }).click();
+  await page.getByRole('button', { name: 'Edit this build' }).click();
   await expect(page.locator('#stage-list button')).toHaveCount(8);
   await expect(page.getByRole('button', { name: /Rakiata · Budget endgame/ })).toHaveAttribute('aria-current', 'true');
   await page.getByRole('button', { name: 'Guide', exact: true }).click();
@@ -118,11 +119,49 @@ test('remaps independent snapshots and gear references without merging unrelated
 });
 
 test('fits the progression editor on a phone', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Try Flicker Strike example' }).click();
+  await page.getByRole('button', { name: 'Budget Flicker' }).click();
+  await page.getByRole('button', { name: 'Edit this build' }).click();
   await expect(page.locator('#stage-list button')).toHaveCount(8);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await page.getByRole('button', { name: 'Export build' }).click();
   await expect(page.locator('#export-dialog')).toBeVisible();
+});
+
+test('generates a PoB from a description or a class without a prior import', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  const result = page.locator('#build-results');
+  const generate = page.getByRole('button', { name: 'Generate build', exact: true });
+  await page.getByLabel('Describe your build').fill('Chcę Flicker Strike pod przeżywalność');
+  await generate.click();
+  await expect(result.getByRole('heading', { name: 'Flicker Strike Slayer' })).toBeVisible();
+  await expect(result).toContainText('Opens at The Surrender · Defence');
+  await expect(result.getByRole('link', { name: 'Open on pobb.in' })).toHaveAttribute('href', /^https:\/\/pobb\.in\/[A-Za-z0-9_-]{12}$/);
+  await result.getByRole('button', { name: 'Copy PoB code' }).click();
+  await expect(result).toContainText('PoB import code copied.');
+  const code = await page.evaluate(() => navigator.clipboard.readText());
+  expect(inflateSync(Buffer.from(code, 'base64url')).toString('utf8')).toContain('activeSpec="8"');
+  await page.getByLabel('Describe your build').clear();
+  await page.getByLabel('Class or ascendancy').selectOption('Deadeye');
+  await generate.click();
+  await expect(result.getByRole('heading', { name: 'Lightning Arrow Deadeye' })).toBeVisible();
+  await page.getByLabel('Describe your build').fill('Tornado Shot');
+  await generate.click();
+  await expect(result).toContainText('No template for tornado shot');
+  await expect(result.getByRole('link', { name: 'Open on pobb.in' })).toHaveCount(0);
+});
+
+test('includes a bossing loadout when prioritizing a budget start', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Describe your build').fill('cheap Witch minions for bossing');
+  await page.getByRole('button', { name: 'Generate build', exact: true }).click();
+  const result = page.locator('#build-results');
+  await expect(result).toContainText('Poison Summon Raging Spirit Necromancer');
+  await expect(result).toContainText('Opens at Atlas · Early endgame');
+  await expect(result).toContainText('The bossing loadout is also included.');
+  await page.getByLabel('Priority').selectOption('bossing');
+  await page.getByRole('button', { name: 'Generate build', exact: true }).click();
+  await expect(result).toContainText('Opens at Endgame · Poison SRS');
 });

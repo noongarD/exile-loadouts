@@ -1,5 +1,6 @@
 import { compilePoB, CONDITIONS, decodePoB, encodePoB, EQUIPMENT, equippedItems, gemGroups, itemName, originalNotes, readSnapshot, savedMainGroup, sourceOptions, treeDiff } from './pob.js';
 import { addSource, fileStem, formatGuide, MAX_STAGES, newProject, newStage, normalizeProject, PHASES, pruneSources, STORAGE } from './project.js';
+import { CLASSES, FOCUS_LABELS, recommend } from './generator.js';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor-body');
@@ -11,6 +12,8 @@ let tab = 'project';
 let pending;
 let exported;
 let storageAvailable = true;
+let buildCatalog;
+let buildRequest = 0;
 const snapshots = new Map();
 try {
   const saved = localStorage.getItem(STORAGE);
@@ -462,20 +465,121 @@ $('project-file').onchange = async event => {
   }
 };
 $('save-project').onclick = () => download(JSON.stringify(project, null, 2), `${fileStem(project.title)}.json`, 'application/json');
-$('demo').onclick = async () => {
-  if (!mayReplace()) return;
-  $('demo').disabled = true;
+async function fetchBuildFile(filename) {
+  const response = await fetch(new URL(`../builds/${filename}`, import.meta.url));
+  if (!response.ok) throw new Error('The build could not be loaded. Try again in a moment.');
+  return response.json();
+}
+
+async function catalog() {
+  buildCatalog ??= fetchBuildFile('catalog.json').catch(error => {
+    buildCatalog = undefined;
+    throw error;
+  });
+  return buildCatalog;
+}
+
+async function loadGeneratedProject(template, focus) {
+  const data = await fetchBuildFile(template.file);
+  data.defaultId = data.stages[template.profiles[focus]].id;
+  return normalizeProject(data);
+}
+
+async function showGeneratedBuild(template, focus, reason, requested = focus, budgetFocus = '') {
+  const results = $('build-results');
+  const request = ++buildRequest;
+  results.hidden = false;
+  results.replaceChildren(muted('Preparing your build…'));
   try {
-    const response = await fetch(new URL('../examples/flicker-strike.json', import.meta.url));
-    if (!response.ok) throw new Error('The example could not be loaded.');
-    replaceProject(normalizeProject(await response.json()), 'stage');
-    $('workspace').scrollIntoView();
-    status('Flicker Strike example loaded.');
+    const generated = await loadGeneratedProject(template, focus);
+    if (request !== buildRequest) return;
+    const initial = generated.stages.find(stage => stage.id === generated.defaultId);
+    const treeVersion = readSnapshot(generated.sources[initial.source].xml, initial.selection).treeVersion;
+    const link = template.links[focus];
+    const feedback = element('p', { className: 'feedback', role: 'status' });
+    const openEditor = button('Edit this build', () => {
+      if (!mayReplace()) return;
+      replaceProject(structuredClone(generated), 'stage');
+      $('workspace').scrollIntoView({ block: 'start' });
+      status('Build loaded into the editor.');
+    });
+    const copy = button('Copy PoB code', async () => {
+      try {
+        const diffs = generated.stages.map((stage, index) => {
+          const read = entry => entry && readSnapshot(generated.sources[entry.source].xml, entry.selection);
+          return treeDiff(read(generated.stages[index - 1]), read(stage));
+        });
+        const xml = compilePoB(generated, formatGuide(generated, { diffs }));
+        await navigator.clipboard.writeText(await encodePoB(xml));
+        status('PoB import code copied.', false, feedback);
+      } catch (error) {
+        status(error.message, true, feedback);
+      }
+    }, 'quiet');
+    const title = element('h2', { id: 'result-title', tabIndex: -1 }, template.title);
+    results.replaceChildren(element('article', { className: 'panel generated-card', 'aria-labelledby': 'result-title' },
+      element('p', { className: 'eyebrow' }, `${reason} · ${template.className} / ${template.ascendancy}`),
+      title, muted(template.summary),
+      element('div', { className: 'result-meta' }, `${FOCUS_LABELS[focus]} · Opens at ${initial.title} · ${generated.stages.length} loadouts`),
+      ...(budgetFocus && Object.hasOwn(template.profiles, budgetFocus) ? [muted(`Your budget preference opens the lower-investment stage. The ${FOCUS_LABELS[budgetFocus].toLowerCase()} loadout is also included.`)] : []),
+      ...(requested !== focus ? [muted(`The catalog has no dedicated ${FOCUS_LABELS[requested].toLowerCase()} loadout for this build. It opens on ${FOCUS_LABELS[focus].toLowerCase()}.`)] : []),
+      element('ol', { className: 'result-stages', 'aria-label': 'Build progression' }, ...generated.stages.map(stage =>
+        element('li', { className: `phase-${stage.phase}` }, stage.title))),
+      actions(element('a', { className: 'button primary', href: link, target: '_blank', rel: 'noopener noreferrer' }, 'Open on pobb.in ↗'), openEditor, copy),
+      feedback,
+      element('p', { className: 'muted credit' }, 'Build reference by ',
+        element('a', { href: template.guide, target: '_blank', rel: 'noopener noreferrer' }, template.author),
+        treeVersion ? ` · PoB tree ${treeVersion.replaceAll('_', '.')}` : '')));
+    results.scrollIntoView({ block: 'nearest' });
+    title.focus({ preventScroll: true });
   } catch (error) {
-    status(error.message, true);
-  } finally {
-    $('demo').disabled = false;
+    if (request === buildRequest) results.replaceChildren(element('p', { role: 'alert', className: 'error' }, error.message));
   }
+}
+
+function showBuildChoices(templates, heading, message) {
+  buildRequest++;
+  const results = $('build-results');
+  results.hidden = false;
+  results.replaceChildren(element('h2', {}, heading), ...(message ? [muted(message)] : []),
+    element('div', { className: 'catalog-grid' }, ...templates.map(template => element('article', { className: 'panel catalog-card' },
+      element('p', { className: 'eyebrow' }, template.ascendancy), element('h3', {}, template.title),
+      muted(template.summary), button('Generate this build', () => showGeneratedBuild(template, template.defaultFocus, 'Selected build'))))));
+  results.scrollIntoView({ block: 'nearest' });
+}
+
+for (const [className, ascendancies] of Object.entries(CLASSES)) {
+  const group = element('optgroup', { label: className }, element('option', { value: className }, `Any ${className}`),
+    ...ascendancies.map(name => element('option', { value: name }, name)));
+  $('build-class').append(group);
+}
+$('build-request').onsubmit = async event => {
+  event.preventDefault();
+  const trigger = $('generate');
+  trigger.disabled = true;
+  try {
+    const templates = await catalog();
+    const result = recommend(templates, { description: $('build-prompt').value, choice: $('build-class').value, focus: $('build-focus').value });
+    if (result.kind === 'match') await showGeneratedBuild(result.template, result.profile, result.reason, result.preference, result.budgetFocus);
+    else showBuildChoices(result.suggestions ?? [], 'No matching build', result.message);
+  } catch (error) {
+    showBuildChoices([], 'Build generator unavailable', error.message);
+  } finally {
+    trigger.disabled = false;
+  }
+};
+$('show-templates').onclick = async () => {
+  try {
+    showBuildChoices(await catalog(), 'Available builds', 'Choose an archetype to see the progression and PoB.');
+  } catch (error) {
+    showBuildChoices([], 'Build generator unavailable', error.message);
+  }
+};
+for (const chip of document.querySelectorAll('[data-prompt]')) chip.onclick = () => {
+  $('build-prompt').value = chip.dataset.prompt;
+  $('build-class').value = '';
+  $('build-focus').value = '';
+  $('build-request').requestSubmit();
 };
 $('export').onclick = async () => {
   $('export').disabled = true;

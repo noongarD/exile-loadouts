@@ -267,7 +267,14 @@ export function compilePoB(project, notes) {
   const build = doc.importNode(base.build, true);
   direct(build, 'PlayerStat').forEach(stat => stat.remove());
   direct(build, 'MinionStat').forEach(stat => stat.remove());
+  direct(build, 'FullDPSSkill').forEach(stat => stat.remove());
   build.removeAttribute('mainSkillIndex');
+  const sourceBuildClass = attr(base.build, 'ascendClassName');
+  const selectedAscendancy = attr(base.tree, 'ascendClassId');
+  if (selectedAscendancy === '0') build.setAttribute('ascendClassName', 'None');
+  if (selectedAscendancy !== '0' && (!sourceBuildClass || sourceBuildClass === 'None') && project.ascendancy) {
+    build.setAttribute('ascendClassName', project.ascendancy);
+  }
   const spectres = new Set(direct(build, 'Spectre').map(idOf));
   for (const snapshot of snapshots) {
     for (const spectre of direct(snapshot.build, 'Spectre')) {

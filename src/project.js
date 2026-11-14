@@ -41,6 +41,7 @@ export function normalizeProject(data) {
   const project = newProject();
   project.title = str(data.title, 100);
   project.patch = str(data.patch, 50);
+  if (typeof data.ascendancy === 'string') project.ascendancy = str(data.ascendancy, 60);
   project.overview = str(data.overview, 18000);
   const sources = new Map();
   for (const [key, source] of Object.entries(data.sources)) {

@@ -1,0 +1,247 @@
+[
+  {
+    "id": "flicker",
+    "title": "Flicker Strike Slayer",
+    "className": "Duelist",
+    "ascendancy": "Slayer",
+    "author": "Exile Loadouts",
+    "guide": "https://pobb.in/2zZ-nq6W42tK",
+    "aliases": [
+      "flicker strike",
+      "flicker",
+      "rakiata",
+      "terminus est",
+      "paradoxica",
+      "shako"
+    ],
+    "styles": [
+      "melee"
+    ],
+    "profiles": {
+      "start": 5,
+      "mapping": 5,
+      "bossing": 6,
+      "defence": 7
+    },
+    "summary": "Level with Sunder, switch to Terminus Est and choose between Rakiata, a Paradoxica damage setup and a shield-based defence setup.",
+    "file": "flicker.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/k3WYKtNQSgnU",
+      "mapping": "https://pobb.in/k3WYKtNQSgnU",
+      "bossing": "https://pobb.in/1v_kQrDkz0u7",
+      "defence": "https://pobb.in/lVo2ug2TVR9N"
+    }
+  },
+  {
+    "id": "srs",
+    "title": "Poison Summon Raging Spirit Necromancer",
+    "className": "Witch",
+    "ascendancy": "Necromancer",
+    "author": "BalorMage",
+    "guide": "https://www.poe-vault.com/guides/balormage-summon-raging-spirits-necromancer-build-guide",
+    "aliases": [
+      "summon raging spirit",
+      "summon raging spirits",
+      "srs",
+      "poison srs",
+      "raging spirits"
+    ],
+    "styles": [
+      "minion",
+      "poison"
+    ],
+    "profiles": {
+      "start": 3,
+      "bossing": 4
+    },
+    "original": "7_6IS6EVRZfT",
+    "summary": "Start with fire minions and swap to poison after sourcing the weapon and minion poison chance. Minions keep attacking while you reposition.",
+    "file": "srs.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/MU_5S0oagTv2",
+      "bossing": "https://pobb.in/fcLHddcQeW3A"
+    }
+  },
+  {
+    "id": "deadeye",
+    "title": "Lightning Arrow Deadeye",
+    "className": "Ranger",
+    "ascendancy": "Deadeye",
+    "author": "Firkz Gaming",
+    "guide": "https://pobarchives.com/build/bkVLJWMg",
+    "aliases": [
+      "lightning arrow",
+      "la deadeye",
+      "bow deadeye"
+    ],
+    "styles": [
+      "bow"
+    ],
+    "profiles": {
+      "start": 3,
+      "mapping": 5
+    },
+    "original": "7ogW_TFuoV2D",
+    "summary": "Rain of Arrows levels the character. Switch to Lightning Arrow on an elemental bow and use the final two loadouts to progress your mapper.",
+    "file": "deadeye.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/RPMuz0vHnerO",
+      "mapping": "https://pobb.in/jmKppAiKafzv"
+    }
+  },
+  {
+    "id": "rf",
+    "title": "Righteous Fire Chieftain",
+    "className": "Marauder",
+    "ascendancy": "Chieftain",
+    "author": "Pohx",
+    "guide": "https://pohx.net/",
+    "aliases": [
+      "righteous fire",
+      "rf",
+      "rf chieftain"
+    ],
+    "styles": [
+      "spell"
+    ],
+    "profiles": {
+      "start": 3,
+      "mapping": 4,
+      "defence": 5
+    },
+    "original": "cYgy70giDjbo",
+    "summary": "Start with a physical attack, then sustain Righteous Fire with regeneration and fire resistance. Fire Trap helps with single targets.",
+    "file": "rf.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/qAlfG59o6kTr",
+      "mapping": "https://pobb.in/Irm0IVwtb8lD",
+      "defence": "https://pobb.in/xOmgpsnPBCI9"
+    }
+  },
+  {
+    "id": "cyclone",
+    "title": "Shockwave Cyclone Slayer",
+    "className": "Duelist",
+    "ascendancy": "Slayer",
+    "author": "Grim Key",
+    "guide": "https://youtu.be/H9-aXrx93w4",
+    "aliases": [
+      "cyclone",
+      "shockwave",
+      "shockwave cyclone"
+    ],
+    "styles": [
+      "melee"
+    ],
+    "profiles": {
+      "start": 3,
+      "mapping": 4,
+      "bossing": 5
+    },
+    "original": "3O317e8QoBv2",
+    "summary": "Spin through maps with Cyclone and Shockwave. Use a compatible weapon at the Act 3 swap and improve physical DPS as you map.",
+    "file": "cyclone.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/2irMjap2ylfH",
+      "mapping": "https://pobb.in/4Go34XJn7_Bu",
+      "bossing": "https://pobb.in/mUxhLnepDmbJ"
+    }
+  },
+  {
+    "id": "pconc",
+    "title": "Poisonous Concoction Pathfinder",
+    "className": "Ranger",
+    "ascendancy": "Pathfinder",
+    "author": "Hayura",
+    "guide": "https://pobarchives.com/build/hD3xLPYF",
+    "aliases": [
+      "poisonous concoction",
+      "poisonous concoction of bouncing",
+      "pconc",
+      "pcob",
+      "pconc of bouncing"
+    ],
+    "styles": [
+      "poison"
+    ],
+    "profiles": {
+      "start": 3,
+      "mapping": 4
+    },
+    "original": "ZJeQD3GN5N9N",
+    "summary": "Level on a temporary bow, then use Poisonous Concoction with life flasks. The Bouncing gem takes over in maps.",
+    "file": "pconc.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/7Z9RSHFledZf",
+      "mapping": "https://pobb.in/LSEcjxE97fZe"
+    }
+  },
+  {
+    "id": "totemend",
+    "title": "Storm Burst Totem Hierophant",
+    "className": "Templar",
+    "ascendancy": "Hierophant",
+    "author": "Blux",
+    "guide": "https://www.youtube.com/watch?v=rt4U8KAQ4PQ",
+    "aliases": [
+      "storm burst",
+      "storm burst totems"
+    ],
+    "styles": [
+      "spell",
+      "totem"
+    ],
+    "profiles": {
+      "start": 2,
+      "mapping": 5,
+      "bossing": 4,
+      "defence": 3
+    },
+    "original": "rChqksfom9mV",
+    "summary": "Level with fire spells, then place Storm Burst totems. Choose among Atlas, damage and defensive mana-based setups.",
+    "file": "totemend.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/jgJAUTNO3Krc",
+      "mapping": "https://pobb.in/GfYY7zwQqc3U",
+      "bossing": "https://pobb.in/Xe43QZTvivxm",
+      "defence": "https://pobb.in/rF_m1V57JA_4"
+    }
+  },
+  {
+    "id": "shadow",
+    "title": "Static Strike Assassin",
+    "className": "Shadow",
+    "ascendancy": "Assassin",
+    "author": "Zish",
+    "guide": "https://pobarchives.com/build/eLPCznfe",
+    "aliases": [
+      "static strike",
+      "static strike of gathering lightning",
+      "ssogl"
+    ],
+    "styles": [
+      "melee"
+    ],
+    "profiles": {
+      "start": 2,
+      "mapping": 3,
+      "bossing": 4
+    },
+    "original": "K_mS_CBHgnGn",
+    "summary": "Level with a claw attack and switch to Static Strike of Gathering Lightning once you have the transfigured gem and a suitable elemental claw.",
+    "file": "shadow.json",
+    "defaultFocus": "start",
+    "links": {
+      "start": "https://pobb.in/d-KI3f0m1Amn",
+      "mapping": "https://pobb.in/66fovDCCOwh9",
+      "bossing": "https://pobb.in/2UkplNgvSwtr"
+    }
+  }
+]

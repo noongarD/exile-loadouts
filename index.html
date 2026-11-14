@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Turn Path of Building snapshots into one shareable Path of Exile build with leveling stages, endgame variants and gear alternatives.">
+  <meta name="description" content="Describe how you want to play Path of Exile 1 and get a build progression with a ready-to-open PoB link.">
   <meta name="theme-color" content="#10161b">
   <meta property="og:title" content="Exile Loadouts">
-  <meta property="og:description" content="Build progression guides for Path of Exile 1.">
+  <meta property="og:description" content="Find a Path of Exile 1 build by class, skill and playstyle, with a ready-to-open PoB.">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/style.css">
   <script type="module" src="./src/app.js"></script>
@@ -17,23 +17,47 @@
     <div class="shell topbar-inner">
       <a class="brand" href="./" aria-label="Exile Loadouts home"><img src="./assets/icon.svg" alt="" width="30" height="30"> Exile Loadouts</a>
       <nav aria-label="Main navigation">
-        <a href="#workspace">Workspace</a>
+        <a href="#builder">Build generator</a>
+        <a href="#workspace">Editor</a>
         <a href="https://github.com/noongarD/exile-loadouts" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </nav>
     </div>
   </header>
   <main class="shell">
-    <section class="hero" aria-labelledby="hero-title">
+    <section id="builder" class="hero builder" aria-labelledby="hero-title">
       <div class="hero-content">
-        <p class="eyebrow">PATH OF EXILE 1 · BUILD WORKSPACE</p>
-        <h1 id="hero-title">Plan your build.<br>Stage by stage.</h1>
-        <p>Combine leveling, gear swaps and endgame variants into one Path of Building export.</p>
-        <div class="actions">
-          <button id="hero-import" class="primary">Import PoB <span aria-hidden="true">↓</span></button>
-          <button id="demo" class="secondary">Try Flicker Strike example</button>
+        <p class="eyebrow">PATH OF EXILE 1 · SOFTCORE TRADE</p>
+        <h1 id="hero-title">What do you<br>want to play?</h1>
+        <form id="build-request">
+          <label class="field">Describe your build
+            <textarea id="build-prompt" rows="2" maxlength="600" placeholder="A cheap Witch minion build that can take on bosses"></textarea>
+          </label>
+          <div class="form-grid">
+            <label class="field">Class or ascendancy<select id="build-class"><option value="">Any class</option></select></label>
+            <label class="field">Priority
+              <select id="build-focus">
+                <option value="">Infer from description</option>
+                <option value="start">League start</option>
+                <option value="mapping">Fast mapping</option>
+                <option value="bossing">Bossing</option>
+                <option value="defence">Survivability</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button id="generate" class="primary" type="submit">Generate build <span aria-hidden="true">↗</span></button>
+            <button id="show-templates" class="quiet" type="button">Browse builds</button>
+          </div>
+        </form>
+        <p class="catalog-note">Matches your request to a curated build and its loadouts.</p>
+        <div class="actions prompt-examples" aria-label="Example build descriptions">
+          <button type="button" data-prompt="cheap Flicker Strike without Mageblood">Budget Flicker</button>
+          <button type="button" data-prompt="Witch minions for bossing">Minion bossing</button>
+          <button type="button" data-prompt="Deadeye with a bow for fast maps">Fast bow mapper</button>
         </div>
       </div>
     </section>
+    <section id="build-results" class="build-results" aria-live="polite" hidden></section>
     <section id="workspace" class="workspace" aria-labelledby="project-heading">
       <div class="workspace-head">
         <div>
@@ -42,6 +66,7 @@
         </div>
         <div class="actions project-actions">
           <button id="new-project" class="quiet">New project</button>
+          <button id="hero-import" class="secondary">Import PoB</button>
           <label class="button secondary file">Open project<input id="project-file" type="file" accept=".json,application/json"></label>
           <button id="save-project" class="secondary">Save project</button>
           <button id="export" class="primary">Export build <span aria-hidden="true">↗</span></button>
