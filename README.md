@@ -22,6 +22,12 @@ Search Fates, Wickerman Viscera, Threads and selected introductions or balance c
 
 Game data references come from the [3.30 patch notes](https://www.pathofexile.com/forum/view-thread/4013680), [official tree export](https://github.com/grindinggear/skilltree-export/tree/3.30.0), local client tables, [PoE Wiki](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API) and [PoEDB](https://poedb.tw/us/Viscera). The public site uses small derived JSON indexes.
 
+## Game artwork and reference
+
+Build cards show the skill icon and ascendancy artwork. Open a gem to see its inventory art, skill icon when available and acquisition by class. The gear tab shows item art next to the loadout's equipment and opens the actual item text from the PoB. For rares and magic items the picture represents the base item. The Covens section displays the original Fate card art, Viscera and Thread icons.
+
+**Game reference** searches gems, gear, currencies, maps, divination cards, selected bosses, quests, classes and passive nodes. The indexes point to images served by [Grinding Gear Games](https://www.pathofexile.com/developer/docs), [PoE Wiki](https://www.poewiki.net/wiki/Category:Files_copyright_of_Grinding_Gear_Games) and [PoEDB](https://poedb.tw/us/Atlas_of_Worlds). The equipment and currency index also uses official icon URLs listed in a [poe.ninja economy snapshot](https://poe.ninja/docs/api). Game artwork belongs to Grinding Gear Games and remains under its original rights. The site's MIT license applies to the application code.
+
 ## Edit a build guide
 
 1. Open a generated build or use **Import PoB** to start with your own build code or XML. Choose one snapshot or import every tree from a multiset export. For an existing pobb.in link, open its page and copy the build code.

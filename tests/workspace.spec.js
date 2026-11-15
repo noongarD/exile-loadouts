@@ -37,7 +37,7 @@ test('exports the demo with linked loadouts and a persistent editable project', 
   expect(result.notes).toContain('Rare Tower Shield');
   expect(result.references.every(id => id === '0' || result.items.includes(id))).toBeTruthy();
   if (desktopXml) await (await import('node:fs/promises')).writeFile(desktopXml, xml);
-  await page.getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('dialog', { name: 'Export build' }).getByRole('button', { name: 'Close', exact: true }).click();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Flicker Strike Slayer' })).toBeVisible();
   await expect(page.locator('#stage-list button')).toHaveCount(8);
@@ -236,6 +236,38 @@ test('offers a searchable library with an easy first build filter', async ({ pag
   await expect(result.getByRole('status')).toHaveText('1 of 18 builds');
   await result.getByRole('button', { name: 'Generate this build' }).click();
   await expect(result.getByRole('link', { name: 'Open on pobb.in' })).toBeVisible();
+});
+
+test('opens illustrated gear details and resolves the base art of a magic item', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Budget Flicker' }).click();
+  await page.getByRole('button', { name: 'Edit this build' }).click();
+  await page.getByRole('button', { name: 'Gear', exact: true }).click();
+  const flask = page.getByRole('button', { name: /Quicksilver Flask/ });
+  await expect(flask.locator('img')).toHaveAttribute('src', /Quicksilver/);
+  await flask.click();
+  const sheet = page.getByRole('dialog', { name: /Quicksilver Flask/ });
+  await expect(sheet.locator('pre')).toContainText('Rarity: MAGIC');
+  await expect(sheet.getByRole('link', { name: 'PoE Wiki' })).toHaveAttribute('href', /Quicksilver_Flask$/);
+});
+
+test('looks up original gem variants, gem rewards and official passive artwork', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Game reference', exact: true }).click();
+  const search = page.getByLabel('Search game reference');
+  await search.fill('Flicker Strike');
+  const matches = page.locator('#reference-results');
+  await expect(matches.getByRole('button', { name: 'Flicker Strike of Power' })).toBeVisible();
+  await matches.getByRole('button', { name: 'Flicker Strike', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Flicker Strike' });
+  await sheet.getByLabel('Class for gem rewards').selectOption('Duelist');
+  await expect(sheet).toContainText('The Caged Brute · Buy from Nessa');
+  await expect(sheet.locator('img')).toHaveCount(2);
+  await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByLabel('Reference category').selectOption('passives');
+  await search.fill('Master Fletcher');
+  await matches.getByRole('button', { name: 'Master Fletcher', exact: true }).click();
+  await expect(page.locator('#game-detail .game-sprite')).toHaveCSS('background-image', /web\.poecdn\.com/);
 });
 
 test('saves a 3.30 league note inside the exported PoB', async ({ page }) => {

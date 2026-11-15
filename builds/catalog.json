@@ -34,7 +34,8 @@
       "defence": "https://pobb.in/lVo2ug2TVR9N"
     },
     "beginner": "advanced",
-    "firstTip": "Level with Sunder. Switch to Flicker after Terminus Est, Multistrike and reliable Frenzy Charge sustain are ready."
+    "firstTip": "Level with Sunder. Switch to Flicker after Terminus Est, Multistrike and reliable Frenzy Charge sustain are ready.",
+    "skill": "Flicker Strike"
   },
   {
     "id": "srs",
@@ -69,7 +70,8 @@
       "bossing": "https://pobb.in/fcLHddcQeW3A"
     },
     "beginner": "easy",
-    "firstTip": "Start with fire minions. Switch to poison once your minions can reliably poison."
+    "firstTip": "Start with fire minions. Switch to poison once your minions can reliably poison.",
+    "skill": "Summon Raging Spirit"
   },
   {
     "id": "deadeye",
@@ -99,7 +101,8 @@
       "mapping": "https://pobb.in/5y-2P3EzSdYA"
     },
     "beginner": "medium",
-    "firstTip": "Level with Rain of Arrows. Bring a well-linked elemental bow to the Lightning Arrow swap."
+    "firstTip": "Level with Rain of Arrows. Bring a well-linked elemental bow to the Lightning Arrow swap.",
+    "skill": "Lightning Arrow"
   },
   {
     "id": "rf",
@@ -132,7 +135,8 @@
       "defence": "https://pobb.in/xOmgpsnPBCI9"
     },
     "beginner": "easy",
-    "firstTip": "Keep life regeneration and fire resistance high enough to sustain Righteous Fire. Use Fire Trap for tougher targets."
+    "firstTip": "Keep life regeneration and fire resistance high enough to sustain Righteous Fire. Use Fire Trap for tougher targets.",
+    "skill": "Righteous Fire"
   },
   {
     "id": "cyclone",
@@ -166,7 +170,8 @@
       "bossing": "https://pobb.in/mUxhLnepDmbJ"
     },
     "beginner": "medium",
-    "firstTip": "Choose a weapon that works with Shockwave Support before the swap."
+    "firstTip": "Choose a weapon that works with Shockwave Support before the swap.",
+    "skill": "Cyclone"
   },
   {
     "id": "pconc",
@@ -200,7 +205,8 @@
       "mapping": "https://pobb.in/LSEcjxE97fZe"
     },
     "beginner": "medium",
-    "firstTip": "Upgrade your life flasks as you level. Stay on regular Poisonous Concoction until Bouncing is available."
+    "firstTip": "Upgrade your life flasks as you level. Stay on regular Poisonous Concoction until Bouncing is available.",
+    "skill": "Poisonous Concoction of Bouncing"
   },
   {
     "id": "totemend",
@@ -234,7 +240,8 @@
       "defence": "https://pobb.in/rF_m1V57JA_4"
     },
     "beginner": "easy",
-    "firstTip": "Place your totems and move while they keep dealing damage."
+    "firstTip": "Place your totems and move while they keep dealing damage.",
+    "skill": "Storm Burst"
   },
   {
     "id": "shadow",
@@ -266,7 +273,8 @@
       "bossing": "https://pobb.in/2UkplNgvSwtr"
     },
     "beginner": "advanced",
-    "firstTip": "Get the transfigured gem and a suitable elemental claw before swapping from the campaign setup."
+    "firstTip": "Get the transfigured gem and a suitable elemental claw before swapping from the campaign setup.",
+    "skill": "Static Strike of Gathering Lightning"
   },
   {
     "id": "static-strike-guardian",
@@ -299,7 +307,8 @@
       "defence": "https://pobb.in/2SC5vF64Wcnj"
     },
     "beginner": "easy",
-    "firstTip": "Transition into Static Strike after the early campaign and follow the block setup as you progress."
+    "firstTip": "Transition into Static Strike after the early campaign and follow the block setup as you progress.",
+    "skill": "Static Strike"
   },
   {
     "id": "explosive-arrow-hierophant",
@@ -332,7 +341,8 @@
       "bossing": "https://pobb.in/HPWcymUwSdUT"
     },
     "beginner": "medium",
-    "firstTip": "Level with Holy Flame Totem. Match a bow and links to your Explosive Arrow totems before switching."
+    "firstTip": "Level with Holy Flame Totem. Match a bow and links to your Explosive Arrow totems before switching.",
+    "skill": "Explosive Arrow"
   },
   {
     "id": "penance-brand-elementalist",
@@ -366,7 +376,8 @@
       "start": "https://pobb.in/9f7OgPZgliOi",
       "mapping": "https://pobb.in/VRGQ6IL-cCEO",
       "defence": "https://pobb.in/V1-KQsJQzZi3"
-    }
+    },
+    "skill": "Penance Brand"
   },
   {
     "id": "poison-ranged-animate-weapon",
@@ -404,7 +415,8 @@
       "mapping": "https://pobb.in/iIs1yuWrkClk",
       "bossing": "https://pobb.in/myB1C-TA02Vk",
       "defence": "https://pobb.in/BEnDK-tQh-YE"
-    }
+    },
+    "skill": "Animate Weapon of Ranged Arms"
   },
   {
     "id": "incinerate-elementalist",
@@ -437,7 +449,8 @@
       "start": "https://pobb.in/b2ChbOLQ8kou",
       "bossing": "https://pobb.in/HnEdHiy6XaMz",
       "mapping": "https://pobb.in/HnEdHiy6XaMz"
-    }
+    },
+    "skill": "Incinerate of Venting"
   },
   {
     "id": "absolution-necromancer",
@@ -467,7 +480,8 @@
     "links": {
       "start": "https://pobb.in/Xc8-_Mz-F1Rp",
       "mapping": "https://pobb.in/1N6bMD1wIB76"
-    }
+    },
+    "skill": "Absolution"
   },
   {
     "id": "elemental-hit-slayer",
@@ -494,7 +508,8 @@
     "file": "elemental-hit-slayer.json",
     "links": {
       "start": "https://pobb.in/y4xpMpIyPQeJ"
-    }
+    },
+    "skill": "Elemental Hit"
   },
   {
     "id": "static-strike-slayer",
@@ -526,7 +541,8 @@
       "start": "https://pobb.in/p0tquhIIiLjg",
       "mapping": "https://pobb.in/AaJfp_tifQoA",
       "bossing": "https://pobb.in/NUIHciI5zQDE"
-    }
+    },
+    "skill": "Static Strike of Gathering Lightning"
   },
   {
     "id": "earthshatter-berserker",
@@ -560,7 +576,8 @@
       "start": "https://pobb.in/2oSr8YmdP8st",
       "mapping": "https://pobb.in/oRF7NCeLmOy_",
       "bossing": "https://pobb.in/OKN_OKt23lgk"
-    }
+    },
+    "skill": "Earthshatter"
   },
   {
     "id": "elemental-spectrum-deadeye",
@@ -590,6 +607,7 @@
     "links": {
       "start": "https://pobb.in/IRvfj79tNoX8",
       "mapping": "https://pobb.in/OecRalx-LIqE"
-    }
+    },
+    "skill": "Elemental Hit of the Spectrum"
   }
 ]

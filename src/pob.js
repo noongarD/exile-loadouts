@@ -202,11 +202,17 @@ function remapItemRefs(node, ids) {
   }
 }
 
-export function itemName(raw) {
+export function itemIdentity(raw) {
   const lines = raw.trim().split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   const rarity = lines.findIndex(line => /^Rarity: /i.test(line));
-  return lines.slice(rarity + 1).find(line => !/^-+$/.test(line)) || 'Custom item';
+  const type = lines[rarity]?.slice('Rarity: '.length).toLowerCase() || '';
+  const header = lines.slice(rarity + 1);
+  const divider = header.findIndex(line => /^-+$/.test(line));
+  const [name = 'Custom item', second] = divider === -1 ? header : header.slice(0, divider);
+  return { name, base: ['unique', 'rare'].includes(type) ? second || name : name, rarity: type };
 }
+
+export const itemName = raw => itemIdentity(raw).name;
 
 function writeItems(doc, itemSection, stageItems, additions, register) {
   for (const entry of additions) {
@@ -394,9 +400,16 @@ export function gemGroups(snapshot) {
 }
 
 export function equippedItems(snapshot) {
-  const catalog = new Map(snapshot.itemLibrary.map(item => [idOf(item), itemName(item.textContent)]));
-  return direct(snapshot.items, 'Slot').map(slot => ({ slot: attr(slot, 'name'), name: catalog.get(attr(slot, 'itemId')) }))
-    .filter(entry => entry.name);
+  const catalog = new Map(snapshot.itemLibrary.map(item => [idOf(item), item.textContent]));
+  const items = direct(snapshot.items, 'Slot').flatMap(slot => {
+    const raw = catalog.get(attr(slot, 'itemId'));
+    return raw ? [{ slot: attr(slot, 'name'), raw, ...itemIdentity(raw) }] : [];
+  });
+  const jewels = direct(first(snapshot.tree, 'Sockets'), 'Socket').flatMap(socket => {
+    const raw = catalog.get(attr(socket, 'itemId'));
+    return raw ? [{ slot: 'Socketed jewel', raw, ...itemIdentity(raw) }] : [];
+  });
+  return [...items, ...jewels];
 }
 
 export function savedMainGroup(snapshot, selection) {

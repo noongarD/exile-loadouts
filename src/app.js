@@ -1,7 +1,9 @@
-import { compilePoB, CONDITIONS, decodePoB, encodePoB, EQUIPMENT, equippedItems, gemGroups, itemName, originalNotes, readSnapshot, savedMainGroup, sourceOptions, treeDiff } from './pob.js';
+import { compilePoB, CONDITIONS, decodePoB, encodePoB, EQUIPMENT, equippedItems, gemGroups, itemIdentity, itemName, originalNotes, readSnapshot, savedMainGroup, sourceOptions, treeDiff } from './pob.js';
 import { addSource, fileStem, formatGuide, MAX_STAGES, newProject, newStage, normalizeProject, PHASES, pruneSources, STORAGE } from './project.js';
 import { CLASSES, FOCUS_LABELS, normalizeTerms, recommend } from './generator.js';
 import { draftRequest, findSkills, firstAcquisition, makeDraft, passivePath } from './planner.js';
+import { artwork } from './game-art.js';
+import { setupReference } from './reference.js';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor-body');
@@ -48,6 +50,26 @@ const actions = (...children) => element('div', { className: 'actions' }, ...chi
 const panel = (summary, ...children) => element('details', { className: 'subpanel' }, element('summary', {}, summary), ...children);
 const currentStage = () => project.stages.find(stage => stage.id === selected);
 const within = (value, min, max) => /^\d+$/.test(value) && Number(value) >= min && Number(value) <= max;
+const inspectGame = setupReference({ element, planner: () => dataset('planner') });
+
+function gemChip(name, className) {
+  return element('button', { className: 'gem-chip', type: 'button', onclick: () => inspectGame('gems', name, { className }) },
+    artwork('gems', name), element('span', {}, name));
+}
+
+function gemChain(gems, className) {
+  if (!gems.length) return null;
+  return element('div', { className: 'gem-chain', 'aria-label': 'Socket links' }, ...gems.map(name => gemChip(name, className)));
+}
+
+function mainGems(stage, snap) {
+  const groups = gemGroups(snap);
+  const index = stage.edits.main;
+  const group = groups[index];
+  if (!group) return stage.edits.extraGroups[index - groups.length]?.gems ?? [];
+  return [...group.gems.filter(gem => stage.edits.gems[`${index}:${gem.index}`]?.enabled ?? gem.enabled).map(gem => gem.name),
+    ...(stage.edits.links?.[index] ?? [])];
+}
 
 function status(text = '', error = false, target = $('status')) {
   target.textContent = text;
@@ -276,11 +298,13 @@ function passiveEditor(stage, snap) {
       !node[3] && node[2] == null && !node[4] && node[0].toLowerCase().includes(term)).slice(0, 12) : [];
     rows.replaceChildren(...matches.map(([id, node]) => {
       const path = passivePath(data, selectedIds, id);
-      return button(`${node[0]} · ${path.length || 'No path'}${path.length ? ' points' : ''}`, () => {
+      const choice = button(`${node[0]} · ${path.length || 'No path'}${path.length ? ' points' : ''}`, () => {
         stage.edits.passiveNodes = [...added, ...path];
         persist();
         showMatches();
       }, 'quiet', { disabled: !path.length || added.length + path.length > 180 });
+      choice.prepend(artwork('passives', id));
+      return choice;
     }));
   }
   search.oninput = showMatches;
@@ -299,11 +323,14 @@ function gemRoutes(stage, snap, data) {
     ...stage.edits.extraGroups.flatMap(group => group.gems), ...Object.values(stage.edits.links ?? {}).flat()])];
   return names.map(name => {
     const route = firstAcquisition(data, name, className);
-    if (!route) return `${name} · check the gem’s specific acquisition.`;
+    if (!route) return { name, text: `${name} · check the gem’s specific acquisition.` };
     const [act, quest, npc, , method] = route;
-    return `${name} · Act ${act} · ${quest} · ${method === 'quest' ? 'Quest reward' : `Buy from ${npc || 'vendor'}`}`;
+    return { name, quest, text: `${name} · Act ${act} · ${quest} · ${method === 'quest' ? 'Quest reward' : `Buy from ${npc || 'vendor'}`}` };
   });
 }
+
+const routeList = rows => element('ul', { className: 'gem-route-list' }, ...rows.map(({ name, quest, text }) =>
+  element('li', {}, artwork('gems', name), element('span', {}, text), quest ? artwork('quests', quest) : null)));
 
 function stageResearch(stage, snap) {
   const output = element('div', {});
@@ -318,9 +345,9 @@ function stageResearch(stage, snap) {
       const lines = gemRoutes(stage, snap, data);
       output.dataset.loaded = 'yes';
       output.replaceChildren(...(changes.length ? [muted(`3.30 changed ${[...new Set(changes.map(change => change.name))].join(', ')} in this tree. Review those nodes before migration.`)] : []),
-        element('ul', {}, ...lines.map(line => element('li', {}, line))),
+        routeList(lines),
         button('Add gem route to this stage', () => {
-          const newText = ['Gem acquisition', ...lines].join('\n');
+          const newText = ['Gem acquisition', ...lines.map(row => row.text)].join('\n');
           if (!stage.goal.includes(newText)) stage.goal = [stage.goal, newText].filter(Boolean).join('\n\n').slice(0, 6000);
           persist();
           render();
@@ -334,10 +361,19 @@ function stageResearch(stage, snap) {
 function showGear(stage) {
   const snap = snapshot(stage);
   const equipped = snap ? equippedItems(snap) : [];
+  for (const entry of stage.alternatives.filter(item => item.equipped && item.slot && item.raw.trim())) {
+    const override = { ...itemIdentity(entry.raw), slot: entry.slot, raw: entry.raw };
+    const i = equipped.findIndex(item => item.slot === entry.slot);
+    if (i === -1) equipped.push(override);
+    else equipped[i] = override;
+  }
   editor.append(element('h3', {}, 'Gear and alternatives'),
     muted('Add shopping notes or paste an English item copied from the game or PoB. Item text is included in the exported item library.'),
-    panel('Equipment from the snapshot', ...(equipped.length ? equipped.map(entry =>
-      element('div', { className: 'gear-row' }, element('span', { className: 'muted' }, entry.slot), entry.name)) : [muted('No equipment to show.')])),
+    element('div', { className: 'equipment-grid', 'aria-label': 'Equipment' }, ...(equipped.length ? equipped.map(entry =>
+      element('button', { type: 'button', className: `equipment-tile rarity-${entry.rarity}`, onclick: () => inspectGame('equipment', entry.name, entry) },
+        artwork('equipment', entry.name, { base: entry.base, rarity: entry.rarity, large: true }), element('span', {},
+          element('small', {}, entry.slot), element('strong', {}, entry.name),
+          entry.base !== entry.name ? element('small', {}, entry.base) : null))) : [muted('No equipment to show.')])),
     element('div', { className: 'alternative-head' }, element('h4', {}, 'Alternative items'), button('+ Add item', () => {
       stage.alternatives.push({ slot: '', name: '', raw: '', why: '', equipped: false });
       persist();
@@ -354,6 +390,8 @@ function showGear(stage) {
       element('div', { className: 'editor-footer' },
         check('Equip in this stage', entry.equipped, value => { entry.equipped = value; }),
         button('Remove item', () => { stage.alternatives.splice(index, 1); persist(); render(); }, 'quiet danger')));
+    const identity = entry.raw ? itemIdentity(entry.raw) : { name: entry.name };
+    if (identity.name) details.querySelector('summary').prepend(artwork('equipment', identity.name, identity));
     details.classList.add('alternative');
     editor.append(details);
   }
@@ -363,29 +401,43 @@ function showSkills(stage) {
   const snap = snapshot(stage);
   const groups = snap ? gemGroups(snap) : [];
   const edits = stage.edits;
+  const className = snap?.build.getAttribute('className');
   const names = groups.map(group => group.label || group.gems.map(gem => gem.name).join(' + ') || group.slot || 'Unnamed group');
   names.push(...edits.extraGroups.map(group => group.gems.join(' + ')));
   editor.append(element('h3', {}, 'Skills and configuration'), muted('Edit socket groups and set combat assumptions for this stage. Path of Building calculates the results after import.'));
-  if (names.length) editor.append(select('Main skill group', String(edits.main), names.map((name, index) => [String(index), name]), value => { edits.main = Number(value); }));
+  const linksPreview = element('div', {});
+  const refreshLinks = () => {
+    const chain = snap && gemChain(mainGems(stage, snap), className);
+    linksPreview.replaceChildren(...(chain ? [chain] : []));
+  };
+  if (names.length) editor.append(select('Main skill group', String(edits.main), names.map((name, index) => [String(index), name]), value => {
+    edits.main = Number(value);
+    refreshLinks();
+  }), linksPreview);
+  refreshLinks();
   for (const [index, group] of groups.entries()) {
     const links = edits.links?.[index] ?? [];
     const capacity = Math.max(0, 6 - group.gems.length);
-    editor.append(panel(`${group.slot ? `${group.slot} · ` : ''}${group.label || group.gems[0]?.name || 'Socket group'}`,
+    const groupPanel = panel(`${group.slot ? `${group.slot} · ` : ''}${group.label || group.gems[0]?.name || 'Socket group'}`,
       ...group.gems.map(gem => {
         const key = `${index}:${gem.index}`;
         const change = (field, value) => {
           const edit = edits.gems[key] ??= {};
           if (value === '') delete edit[field];
           else edit[field] = value;
+          if (field === 'enabled' && index === edits.main) refreshLinks();
         };
         const edit = edits.gems[key] || {};
-        return element('div', { className: 'gem-row' }, element('span', {}, gem.name),
+        return element('div', { className: 'gem-row' }, gemChip(gem.name, className),
           field('Level', edit.level ?? gem.level, value => change('level', value), { type: 'number', min: 1, max: 100 }),
           field('Quality', edit.quality ?? gem.quality, value => change('quality', value), { type: 'number', min: 0, max: 100 }),
           check('Active', edit.enabled ?? gem.enabled, value => change('enabled', value)));
       }), ...(capacity ? [field('Additional support gems', links.join(', '), value => {
         (edits.links ??= {})[index] = value.split(',').map(name => name.trim()).filter(Boolean).slice(0, capacity);
-      }, { placeholder: 'e.g. Mirage Archer, Added Cold Damage', maxLength: 500 })] : [])));
+        if (index === edits.main) refreshLinks();
+      }, { placeholder: 'e.g. Mirage Archer, Added Cold Damage', maxLength: 500 })] : []));
+    if (group.gems.length) groupPanel.querySelector('summary').prepend(artwork('gems', group.gems[0].name));
+    editor.append(groupPanel);
   }
   const extras = edits.extraGroups.map((group, index) =>
     element('div', { className: 'snapshot-line' }, `${group.slot} · ${group.gems.join(' + ')} (${group.level}/${group.quality})`,
@@ -617,6 +669,8 @@ function updateDraftSkillStatus() {
   $('draft-skill-status').textContent = skill?.pob ? `${skill.name} requires level ${skill.level}+.` :
     skill ? `${skill.name} requires a PoB update to export.` : 'Select an active skill supported by PoB 2.67.2.';
   $('draft-create').disabled = !skill?.pob;
+  $('draft-art').replaceChildren(artwork('classes', $('draft-ascendancy').value || $('draft-class').value),
+    ...(skill ? [artwork('gems', skill.name, { active: true })] : []));
 }
 
 async function openDraft({ description = '' } = {}) {
@@ -669,7 +723,8 @@ async function drawLeague() {
     status(rows.length ? `${rows.length} entries` : 'No league entries match that search.', false, $('league-status'));
     output.replaceChildren(...rows.slice(0, leaguePageSize).map(item => {
       const note = item.text || data.highlights[item.name];
-      return element('article', { className: 'league-result' }, element('h3', {}, item.name), note && muted(note),
+      return element('article', { className: 'league-result' }, element('div', { className: 'icon-heading' },
+        artwork(category, category === 'topics' ? item.id : item.name), element('h3', {}, item.name)), note && muted(note),
         actions(button('Add to build notes', () => attachLeagueNote(item.name, note, item.source), 'quiet'),
           element('a', { href: item.source, target: '_blank', rel: 'noopener noreferrer' }, 'Source ↗')));
     }));
@@ -678,7 +733,8 @@ async function drawLeague() {
 }
 
 $('draft-open').onclick = () => openDraft({ description: $('build-prompt').value });
-$('draft-class').onchange = () => populateDraftAscendancies();
+$('draft-class').onchange = () => { populateDraftAscendancies(); updateDraftSkillStatus(); };
+$('draft-ascendancy').onchange = updateDraftSkillStatus;
 $('draft-search').oninput = drawDraftSkills;
 $('draft-skill').onchange = updateDraftSkillStatus;
 $('draft-form').onsubmit = event => {
@@ -714,8 +770,9 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
     const initial = generated.stages.find(stage => stage.id === generated.defaultId);
     const firstStage = generated.stages[0];
     const firstSnapshot = readSnapshot(generated.sources[firstStage.source].xml, firstStage.selection);
+    const initialSnapshot = readSnapshot(generated.sources[initial.source].xml, initial.selection);
     const routes = gemRoutes(firstStage, firstSnapshot, data);
-    const treeVersion = readSnapshot(generated.sources[initial.source].xml, initial.selection).treeVersion;
+    const treeVersion = initialSnapshot.treeVersion;
     const link = template.links[focus];
     const profileLabel = link ? 'Open on pobb.in ↗' : 'Original guide PoB ↗';
     const feedback = element('p', { className: 'feedback', role: 'status' });
@@ -741,17 +798,19 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
     const title = element('h2', { id: 'result-title', tabIndex: -1 }, template.title);
     results.replaceChildren(element('article', { className: 'panel generated-card', 'aria-labelledby': 'result-title' },
       element('p', { className: 'eyebrow' }, `${reason} · ${template.className} / ${template.ascendancy}`),
-      title, muted(template.summary),
+      artwork('classes', template.ascendancy, { large: true }),
+      element('div', { className: 'icon-heading' }, artwork('gems', template.skill, { active: true, large: true }), title), muted(template.summary),
       ...(hints.length ? [element('p', { className: 'match-hints' }, `Matched on ${[...new Set(hints)].join(' · ')}`)] : []),
       ...(template.firstTip && template.firstTip !== template.summary ? [element('p', { className: 'first-tip' }, template.firstTip)] : []),
       element('div', { className: 'result-meta' }, `${FOCUS_LABELS[focus]} · Opens at ${initial.title} · ${generated.stages.length} loadouts`),
+      gemChain(mainGems(initial, initialSnapshot), template.className),
       ...(budgetFocus && Object.hasOwn(template.profiles, budgetFocus) ? [muted(`Your budget preference opens the lower-investment stage. The ${FOCUS_LABELS[budgetFocus].toLowerCase()} loadout is also included.`)] : []),
       ...(requested !== focus ? [muted(`The catalog has no dedicated ${FOCUS_LABELS[requested].toLowerCase()} loadout for this build. It opens on ${FOCUS_LABELS[focus].toLowerCase()}.`)] : []),
       element('ol', { className: 'result-stages', 'aria-label': 'Build progression' }, ...generated.stages.map(stage =>
         element('li', { className: `phase-${stage.phase}` }, stage.title))),
       element('details', { className: 'subpanel first-loadout' }, element('summary', {}, `Start here · ${firstStage.title}`),
         firstStage.goal && muted(firstStage.goal), firstStage.priority && muted(firstStage.priority),
-        routes.length ? panel('Where to get the gems', element('ul', {}, ...routes.map(line => element('li', {}, line)))) : null,
+        routes.length ? panel('Where to get the gems', routeList(routes)) : null,
         button('Open the first loadout in the editor', () => {
           if (!mayReplace()) return;
           replaceProject(structuredClone(generated), 'stage');
@@ -791,8 +850,9 @@ function showBuildChoices(templates, heading, message, draftAction, browse = fal
     });
     count.textContent = `${visible.length} of ${templates.length} builds`;
     cards.replaceChildren(...visible.map(template => element('article', { className: 'panel catalog-card' },
+      artwork('classes', template.ascendancy, { large: true }),
       element('p', { className: 'eyebrow' }, [template.ascendancy, DIFFICULTY[template.beginner]].filter(Boolean).join(' · ')),
-      element('h3', {}, template.title), muted(template.summary),
+      element('div', { className: 'icon-heading' }, artwork('gems', template.skill, { active: true }), element('h3', {}, template.title)), muted(template.summary),
       button('Generate this build', () => showGeneratedBuild(template, template.defaultFocus, 'Selected build')))));
     if (browse && !visible.length) cards.append(muted('Try a different skill, class or difficulty.'));
   }

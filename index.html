@@ -19,6 +19,7 @@
       <nav aria-label="Main navigation">
         <a href="#builder">Find a build</a>
         <a href="#start-here">First build?</a>
+        <a id="reference-nav" href="#game-reference">Game reference</a>
         <a href="#covens">Covens 3.30</a>
         <a href="#workspace">Editor</a>
         <a href="https://github.com/noongarD/exile-loadouts" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
@@ -111,7 +112,10 @@
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </section>
     <section id="covens" class="workspace league-section" aria-labelledby="covens-heading">
-      <div class="workspace-head"><div><h2 id="covens-heading">Covens of Umbra</h2><p class="muted">3.30 league mechanics, gear and Wickerman effects</p></div></div>
+      <div class="league-banner">
+        <img src="https://web.poecdn.com/public/news/2026-11-10/CovensFAQHeader.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+        <div><h2 id="covens-heading">Covens of Umbra</h2><p class="muted">3.30 league mechanics, gear and Wickerman effects</p></div>
+      </div>
       <div class="panel league-panel">
         <div class="form-grid">
           <label class="field">Search league data<input id="league-search" type="search" placeholder="Viscera, Maven, Threads…"></label>
@@ -122,11 +126,35 @@
         <button id="league-more" type="button" class="quiet" hidden>Show more</button>
       </div>
     </section>
+    <section id="game-reference" class="workspace" aria-labelledby="reference-heading">
+      <div class="workspace-head"><div><h2 id="reference-heading">Game reference</h2><p class="muted">Look up gems, equipment, maps, bosses, quests and more.</p></div>
+        <button type="button" id="reference-open" class="secondary">Open game reference</button>
+      </div>
+      <div id="reference-content" class="panel reference-panel" hidden>
+        <div class="form-grid">
+          <label class="field">Search game reference<input type="search" id="reference-search" placeholder="e.g. Flicker Strike or Multistrike"></label>
+          <label class="field">Category<select id="reference-category" aria-label="Reference category">
+            <option value="gems">Gems</option><option value="equipment">Equipment and bases</option>
+            <option value="currency">Currency and fragments</option><option value="maps">Maps</option><option value="cards">Divination cards</option>
+            <option value="bosses">Bosses</option>
+            <option value="classes">Classes and ascendancies</option>
+            <option value="passives">Passive skills</option><option value="atlas">Atlas passives</option><option value="quests">Quests</option>
+          </select></label>
+        </div>
+        <p id="reference-count" class="muted" role="status"></p>
+        <div id="reference-results" class="reference-grid"></div>
+        <button id="reference-more" type="button" class="quiet" hidden>Show more entries</button>
+      </div>
+    </section>
   </main>
   <footer class="shell footer">
-    <span>Exile Loadouts is a community tool for Path of Exile 1.</span>
+    <span>Game artwork © Grinding Gear Games. Exile Loadouts is an independent fan project.</span>
     <a href="https://pathofbuilding.community/" target="_blank" rel="noopener noreferrer">Path of Building ↗</a>
   </footer>
+  <dialog id="game-detail" aria-labelledby="game-detail-title">
+    <div class="dialog-head"><h2 id="game-detail-title">Game reference</h2><button class="icon" data-close="game-detail" aria-label="Close">×</button></div>
+    <div id="game-detail-body"></div>
+  </dialog>
   <dialog id="draft-dialog" aria-labelledby="draft-heading">
     <div class="dialog-head"><h2 id="draft-heading">New build draft</h2><button class="icon" data-close="draft-dialog" aria-label="Close">×</button></div>
     <p>Start with campaign and early-map loadouts. The initial trees, gems and gear are editable.</p>
@@ -137,7 +165,7 @@
         <label class="field full">Find an active skill<input id="draft-search" type="search" placeholder="e.g. Tornado Shot"></label>
         <label class="field full">Active skill<select id="draft-skill" aria-label="Active skill" required size="5"></select></label>
       </div>
-      <p id="draft-skill-status" class="muted" aria-live="polite"></p>
+      <div class="icon-heading draft-preview"><span id="draft-art" class="inline-art" aria-hidden="true"></span><p id="draft-skill-status" class="muted" aria-live="polite"></p></div>
       <div class="actions"><button id="draft-create" class="primary" type="submit">Create editable PoB</button></div>
       <p id="draft-status" class="feedback" role="status"></p>
     </form>
