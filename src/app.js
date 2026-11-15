@@ -1,7 +1,7 @@
 import { compilePoB, CONDITIONS, decodePoB, encodePoB, EQUIPMENT, equippedItems, gemGroups, itemIdentity, itemName, originalNotes, readSnapshot, savedMainGroup, sourceOptions, treeDiff } from './pob.js';
 import { addSource, fileStem, formatGuide, MAX_STAGES, newProject, newStage, normalizeProject, PHASES, pruneSources, STORAGE } from './project.js';
 import { CLASSES, FOCUS_LABELS, normalizeTerms, recommend } from './generator.js';
-import { draftRequest, findSkills, firstAcquisition, makeDraft, passivePath } from './planner.js';
+import { draftRequest, findSkills, firstAcquisition, makeDraft, passivePath, PLANNER_TREE } from './planner.js';
 import { artwork } from './game-art.js';
 import { setupReference } from './reference.js';
 
@@ -233,7 +233,7 @@ function showStage(stage) {
       field('Level', stage.level, change('level'), { type: 'number', min: 1, max: 100, step: 1 })),
     element('div', { className: 'snapshot-line' }, muted(snap ? project.sources[stage.source].name : 'No PoB snapshot attached'),
       button(snap ? 'Change snapshot' : 'Attach snapshot', () => openImport(true))),
-    ...(snap ? [showSets(stage, snap), stageResearch(stage, snap), ...(snap.treeVersion === '3_29' ? [passiveEditor(stage, snap)] : [])] : []),
+    ...(snap ? [showSets(stage, snap), stageResearch(stage, snap), ...([PLANNER_TREE, '3_29'].includes(snap.treeVersion) ? [passiveEditor(stage, snap)] : [])] : []),
     grid(...stageFields.map(([label, key, placeholder], i) =>
       field(label, stage[key], value => { stage[key] = value; }, { multiline: true, full: i === 4, placeholder }))),
     element('div', { className: 'editor-footer' }, defaultButton, actions(
@@ -310,7 +310,10 @@ function passiveEditor(stage, snap) {
   search.oninput = showMatches;
   details.addEventListener('toggle', async () => {
     if (!details.open) return;
-    try { data = await dataset('planner'); showMatches(); }
+    try {
+      data = snap.treeVersion === PLANNER_TREE ? await dataset('planner') : { graph: await dataset('planner-tree-3.29') };
+      showMatches();
+    }
     catch (error) { feedback.textContent = error.message; }
   });
   return details;
@@ -667,7 +670,7 @@ function drawDraftSkills() {
 function updateDraftSkillStatus() {
   const skill = draftData.gems[$('draft-skill').value];
   $('draft-skill-status').textContent = skill?.pob ? `${skill.name} requires level ${skill.level}+.` :
-    skill ? `${skill.name} requires a PoB update to export.` : 'Select an active skill supported by PoB 2.67.2.';
+    skill ? `${skill.name} requires a PoB update to export.` : 'Select an active skill supported by the 3.30 PoB development build.';
   $('draft-create').disabled = !skill?.pob;
   $('draft-art').replaceChildren(artwork('classes', $('draft-ascendancy').value || $('draft-class').value),
     ...(skill ? [artwork('gems', skill.name, { active: true })] : []));
@@ -822,7 +825,8 @@ async function showGeneratedBuild(template, focus, reason, requested = focus, bu
       feedback,
       element('p', { className: 'muted credit' }, 'Build reference by ',
         element('a', { href: template.guide, target: '_blank', rel: 'noopener noreferrer' }, template.author),
-        treeVersion ? ` · PoB tree ${treeVersion.replaceAll('_', '.')}` : ''),
+        treeVersion ? ` · PoB tree ${treeVersion.replaceAll('_', '.')}` : '',
+        treeVersion === PLANNER_TREE ? ' · Requires PoB with 3.30 support' : ''),
       ...(alternatives.length ? [element('div', { className: 'related-builds' }, muted('Other matches'),
         actions(...alternatives.map(other => button(other.title, () => showGeneratedBuild(other, other.defaultFocus, 'Other match'), 'secondary'))))] : [])));
     results.scrollIntoView({ block: 'nearest' });

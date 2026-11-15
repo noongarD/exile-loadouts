@@ -39,7 +39,7 @@ Generated notes are included in the PoB file. Use the **Loadouts** menu in the d
 
 ## Compatibility
 
-Supports PoE 1 builds using the same base class throughout a project. The planner uses **3.30 league data** for research and **3.29 PoB data** for generated allocations and skill compatibility. Path of Building Community 2.67.2 calculates damage, and custom drafts use its supported tree. New skills unavailable to that PoB release are listed with an update requirement. League notes are included as text and do not apply a simulated effect. Global settings such as party inputs come from the default snapshot.
+The catalog and new drafts use the **3.30 passive tree and gem definitions** from the pinned [Path of Building Community development build](https://github.com/PathOfBuildingCommunity/PathOfBuilding/commit/f5ca0aeeeeba62d7d2c93b1fbd0704c74d54e7ea). Open new exports in PoB with 3.30 tree support. The editor retains 3.29 passive path data for older imports. Each project uses the same base class throughout its stages. League notes export as text. Combat modifiers require a supported setting or a configured custom modifier. Global settings such as party inputs come from the default snapshot.
 
 ## Run locally
 

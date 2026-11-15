@@ -2,6 +2,7 @@ import { normalizeProject } from './project.js';
 import { normalizeTerms, parseRequest } from './generator.js';
 
 export const LEAGUE = '3.30 · Covens of Umbra';
+export const PLANNER_TREE = '3_30';
 const source = 'campaign';
 const starts = {
   Scion: ['Spectral Throw', 'Shaper'], Marauder: ['Ground Slam', 'Heart of the Warrior'],
@@ -127,7 +128,7 @@ export function makeDraft(data, { className, ascendancy = '', skillName, notes =
     const labRoot = labId && Object.keys(data.graph).find(key => data.graph[key][3] === classData.ascendancies[ascendIndex].id &&
       data.graph[key][1].includes(root));
     if (labRoot) nodes.add(labRoot);
-    treeSets.push(`<Spec ${attributes({ title, treeVersion: '3_29', classId: classIndex, ascendClassId: labId, secondaryAscendClassId: 0, nodes: [...nodes].join(',') })}/>`);
+    treeSets.push(`<Spec ${attributes({ title, treeVersion: data.treeVersion, classId: classIndex, ascendClassId: labId, secondaryAscendClassId: 0, nodes: [...nodes].join(',') })}/>`);
     const weapon = chooseWeapon(skill, className, index);
     const shield = /shield|concoction/i.test(skill.name);
     const slots = [];
@@ -155,7 +156,7 @@ export function makeDraft(data, { className, ascendancy = '', skillName, notes =
   const build = attributes({ className, ascendClassName: 'None', level: 12, characterLevelAutoMode: false, targetVersion: '3_0', mainSocketGroup: 1 });
   const xml = `<PathOfBuilding><Build ${build}/><Tree activeSpec="1">${treeSets.join('')}</Tree><Items activeItemSet="1">${items.join('')}${itemSets.join('')}</Items><Skills activeSkillSet="1">${skillSets.join('')}</Skills><Config activeConfigSet="1">${configSets.join('')}</Config></PathOfBuilding>`;
   return normalizeProject({ version: 1, title: `${gem.name} ${ascendancy || className}`, patch: LEAGUE, ascendancy,
-    overview: ['Custom draft. The tree is partially allocated and skill groups use level 1 gems. Fill in links and build-specific gear before relying on performance. Simulation data targets PoB tree 3.29.',
+    overview: [`Custom draft. The tree is partially allocated and skill groups use level 1 gems. Fill in links and build-specific gear before relying on performance. Requires PoB with ${data.treeVersion.replaceAll('_', '.')} tree support.`,
       routeNote(data, gem, className), notes.trim()].filter(Boolean).join('\n\n'), defaultId: stages[0].id,
     stages, sources: { [source]: { xml, name: 'Custom campaign and early maps draft' } } });
 }

@@ -196,7 +196,7 @@ test('creates an exportable draft for a skill outside the catalog', async ({ pag
   await expect(page.locator('#export-dialog')).toBeVisible();
   const code = await page.getByLabel('Path of Building code').inputValue();
   const xml = inflateSync(Buffer.from(code, 'base64url')).toString('utf8');
-  expect(xml).toContain('treeVersion="3_29"');
+  expect(xml).toContain('treeVersion="3_30"');
   expect(xml).toContain('nameSpec="Tornado Shot"');
   expect(xml).toContain('nameSpec="Mirage Archer"');
   expect(xml).toContain('activeSpec="3"');
@@ -221,6 +221,22 @@ test('uses natural playstyle, exclusions, destination skills and close spellings
     await generate.click();
     await expect(result.getByRole('heading', { name, exact: true })).toBeVisible();
   }
+});
+
+test('exports new 3.30 skills with their native PoB gem identifiers', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Build from scratch' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New build draft' });
+  await dialog.getByLabel('Base class').selectOption('Witch');
+  await dialog.getByLabel('Find an active skill').fill('Fireball of Radiation');
+  await expect(dialog.getByLabel('Active skill', { exact: true })).toHaveValue('Fireball of Radiation');
+  await dialog.getByRole('button', { name: 'Create editable PoB' }).click();
+  await page.getByRole('button', { name: 'Export build' }).click();
+  await expect(page.getByRole('dialog', { name: 'Export build' })).toBeVisible();
+  const code = await page.getByLabel('Path of Building code').inputValue();
+  const xml = inflateSync(Buffer.from(code, 'base64url')).toString('utf8');
+  expect(xml).toContain('treeVersion="3_30"');
+  expect(xml).toContain('variantId="FireballAltX"');
 });
 
 test('offers a searchable library with an easy first build filter', async ({ page }) => {
